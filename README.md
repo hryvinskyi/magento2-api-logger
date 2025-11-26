@@ -2,6 +2,12 @@
 
 API logging solution for Magento 2 with granular endpoint control, secret sanitization, and advanced viewer.
 
+[![Latest Stable Version](https://poser.pugx.org/hryvinskyi/magento2-api-logger/v/stable)](https://packagist.org/packages/hryvinskyi/magento2-api-logger)
+[![Total Downloads](https://poser.pugx.org/hryvinskyi/magento2-api-logger/downloads)](https://packagist.org/packages/hryvinskyi/magento2-api-logger)
+[![PayPal donate button](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=volodymyr%40hryvinskyi%2ecom&lc=UA&item_name=Magento%202%20Advanced%20API%20Logger&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted "Donate once-off to this project using Paypal")
+[![Latest Unstable Version](https://poser.pugx.org/hryvinskyi/magento2-api-logger/v/unstable)](https://packagist.org/packages/hryvinskyi/magento2-api-logger)
+[![License](https://poser.pugx.org/hryvinskyi/magento2-api-logger/license)](https://packagist.org/packages/hryvinskyi/magento2-api-logger)
+
 ## Features
 
 ## Installation
