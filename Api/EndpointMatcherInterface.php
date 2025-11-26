@@ -24,8 +24,9 @@ interface EndpointMatcherInterface
      * - /V1/customers/* (matches any customer endpoint)
      *
      * @param string $endpoint The endpoint to check
+     * @param string $method The HTTP method (e.g., GET, POST, etc.)
      * @param string $pattern The pattern to match against
      * @return bool
      */
-    public function matches(string $endpoint, string $pattern): bool;
+    public function matches(string $endpoint, string $method, string $pattern): bool;
 }

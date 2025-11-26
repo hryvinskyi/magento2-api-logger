@@ -110,6 +110,10 @@ $disabled = $element->getCanUseWebsiteValue()
         align-items: center;
         gap: 8px;
     }
+    .endpoint-group-title .group-select-all {
+        margin: 0;
+        cursor: pointer;
+    }
     .endpoint-group-toggle {
         transition: transform 0.2s;
         color: #666;
@@ -267,7 +271,8 @@ $disabled = $element->getCanUseWebsiteValue()
             // Check if this group has any selected endpoints
             $hasSelected = false;
             foreach ($endpoints as $endpoint) {
-                if (in_array($endpoint['value'], $selectedEndpoints, true)) {
+                $combinedValue = $endpoint['method'] . '|' . $endpoint['value'];
+                if (in_array($combinedValue, $selectedEndpoints, true)) {
                     $hasSelected = true;
                     break;
                 }
@@ -276,6 +281,11 @@ $disabled = $element->getCanUseWebsiteValue()
             <div class="endpoint-group<?= !$hasSelected ? ' collapsed' : '' ?>" data-group="<?= $block->escapeHtmlAttr($group) ?>">
                 <div class="endpoint-group-header">
                     <div class="endpoint-group-title">
+                        <input
+                            type="checkbox"
+                            class="group-select-all ignore-validate"
+                            title="Select/Deselect all endpoints in this group"
+                        />
                         <span class="endpoint-group-toggle">▼</span>
                         <?= $block->escapeHtml($group) ?>
                     </div>
@@ -289,14 +299,15 @@ $disabled = $element->getCanUseWebsiteValue()
                         $endpointValue = $endpoint['value'];
                         $endpointLabel = $endpoint['label'];
                         $endpointMethod = $endpoint['method'];
-                        $isChecked = in_array($endpointValue, $selectedEndpoints, true);
-                        $checkboxId = $elementId . '-' . md5($endpointValue);
+                        $combinedValue = $endpointMethod . '|' . $endpointValue;
+                        $isChecked = in_array($combinedValue, $selectedEndpoints, true);
+                        $checkboxId = $elementId . '-' . md5($combinedValue);
                         ?>
-                        <div class="endpoint-item" data-endpoint="<?= $block->escapeHtmlAttr($endpointValue) ?>" title="<?= $block->escapeHtmlAttr($endpointLabel . ' - ' . $endpointValue) ?>">
+                        <div class="endpoint-item" data-endpoint="<?= $block->escapeHtmlAttr($combinedValue) ?>" title="<?= $block->escapeHtmlAttr($endpointLabel . ' - ' . $endpointValue) ?>">
                             <input
                                 type="checkbox"
                                 id="<?= $checkboxId ?>"
-                                value="<?= $block->escapeHtmlAttr($endpointValue) ?>"
+                                value="<?= $block->escapeHtmlAttr($combinedValue) ?>"
                                 class="endpoint-checkbox ignore-validate"
                                 <?= $isChecked ? 'checked="checked"' : '' ?>
                             />
@@ -368,6 +379,22 @@ $disabled = $element->getCanUseWebsiteValue()
 
         // Checkbox change handler
         $container.on('change', '.endpoint-checkbox', function() {
+            const $group = $(this).closest('.endpoint-group');
+            updateGroupSelectAllState($group);
+            updateHiddenInput();
+            updateGroupCounts();
+            updateStats();
+        });
+
+        // Group select-all checkbox handler
+        $container.on('change', '.group-select-all', function(e) {
+            e.stopPropagation();
+            const $group = $(this).closest('.endpoint-group');
+            const isChecked = $(this).is(':checked');
+
+            // Select/deselect all visible endpoints in this group
+            $group.find('.endpoint-item:not(.hidden) .endpoint-checkbox').prop('checked', isChecked);
+
             updateHiddenInput();
             updateGroupCounts();
             updateStats();
@@ -379,6 +406,7 @@ $disabled = $element->getCanUseWebsiteValue()
             updateHiddenInput();
             updateGroupCounts();
             updateStats();
+            updateAllGroupSelectAllStates();
         });
 
         // Deselect All button
@@ -387,6 +415,7 @@ $disabled = $element->getCanUseWebsiteValue()
             updateHiddenInput();
             updateGroupCounts();
             updateStats();
+            updateAllGroupSelectAllStates();
         });
 
         // Expand All button
@@ -475,9 +504,35 @@ $disabled = $element->getCanUseWebsiteValue()
             $selectedCount.text(selectedCount);
         }
 
-        // Initialize counts
+        // Update group select-all checkbox state based on child checkboxes
+        function updateGroupSelectAllState($group) {
+            const $groupSelectAll = $group.find('.group-select-all');
+            const $visibleCheckboxes = $group.find('.endpoint-item:not(.hidden) .endpoint-checkbox');
+            const totalVisible = $visibleCheckboxes.length;
+            const checkedVisible = $visibleCheckboxes.filter(':checked').length;
+
+            if (totalVisible === 0) {
+                $groupSelectAll.prop('checked', false).prop('indeterminate', false);
+            } else if (checkedVisible === 0) {
+                $groupSelectAll.prop('checked', false).prop('indeterminate', false);
+            } else if (checkedVisible === totalVisible) {
+                $groupSelectAll.prop('checked', true).prop('indeterminate', false);
+            } else {
+                $groupSelectAll.prop('checked', false).prop('indeterminate', true);
+            }
+        }
+
+        // Update all group select-all states
+        function updateAllGroupSelectAllStates() {
+            $('.endpoint-group', $container).each(function() {
+                updateGroupSelectAllState($(this));
+            });
+        }
+
+        // Initialize counts and group select-all states
         updateGroupCounts();
         updateStats();
+        updateAllGroupSelectAllStates();
 
         // Handle "Use Default" / "Use Website" checkbox to toggle disabled state
         const $inheritCheckbox = $hiddenInput.closest('tr').find('.use-default input[type="checkbox"]');

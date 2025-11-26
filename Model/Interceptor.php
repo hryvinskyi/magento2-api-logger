@@ -152,7 +152,7 @@ class Interceptor implements InterceptorInterface
     /**
      * @inheritDoc
      */
-    public function shouldLogEndpoint(string $endpoint): bool
+    public function shouldLogEndpoint(string $endpoint, string $method): bool
     {
 
         if (!$this->config->isEnabled()) {
@@ -165,7 +165,7 @@ class Interceptor implements InterceptorInterface
         }
 
         foreach ($enabledEndpoints as $pattern) {
-            if ($this->endpointMatcher->matches($endpoint, $pattern)) {
+            if ($this->endpointMatcher->matches($endpoint, $method, $pattern)) {
                 return true;
             }
         }

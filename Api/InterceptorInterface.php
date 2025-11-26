@@ -58,7 +58,8 @@ interface InterceptorInterface
      * Check if endpoint should be logged
      *
      * @param string $endpoint
+     * @param string $method
      * @return bool
      */
-    public function shouldLogEndpoint(string $endpoint): bool;
+    public function shouldLogEndpoint(string $endpoint, string $method): bool;
 }

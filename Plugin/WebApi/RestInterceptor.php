@@ -55,15 +55,15 @@ class RestInterceptor
             }
 
             $endpoint = $this->extractor->extractEndpoint($request);
+            $method = $this->extractor->extractMethod($request);
 
-            if (!$this->interceptor->shouldLogEndpoint($endpoint)) {
+            if (!$this->interceptor->shouldLogEndpoint($endpoint, $method)) {
                 return [$request];
             }
 
             $this->startTime = microtime(true);
 
             // Extract request data using extractor service
-            $method = $this->extractor->extractMethod($request);
             $headers = $this->extractor->extractRequestHeaders($request);
             $body = $this->extractor->extractRequestBody($request);
 

@@ -30,13 +30,20 @@ class EndpointMatcher implements EndpointMatcherInterface
     /**
      * @inheritDoc
      */
-    public function matches(string $endpoint, string $pattern): bool
+    public function matches(string $endpoint, string $method, string $pattern): bool
     {
-        $route = new Route($pattern);
+        // Extract method and endpoint from pattern
+        [$patternMethod, $patternEndpoint] = explode('|', $pattern, 2);
 
-        $processedPath = $this->pathProcessor->process($endpoint);
-        $this->request->setPathInfo($processedPath);
+        if (mb_strtolower($patternMethod) === mb_strtolower($method)) {
+            $route = new Route($patternEndpoint);
 
-        return (bool) $route->match($this->request);
+            $processedPath = $this->pathProcessor->process($endpoint);
+            $this->request->setPathInfo($processedPath);
+
+            return (bool) $route->match($this->request);
+        }
+
+        return false;
     }
 }

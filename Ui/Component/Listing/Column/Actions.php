@@ -61,6 +61,7 @@ class Actions extends Column
                                 ['id' => $item['entity_id']]
                             ),
                             'label' => __('Delete'),
+                            'post' => true,
                             'confirm' => [
                                 'title' => __('Delete Log Entry'),
                                 'message' => __('Are you sure you want to delete this log entry?')
