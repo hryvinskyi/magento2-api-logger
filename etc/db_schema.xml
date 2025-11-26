@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2025. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="hryvinskyi_api_log_entry" resource="default" engine="innodb" comment="API Log Entries">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
+                comment="Entity ID"/>
+        <column xsi:type="varchar" name="endpoint" nullable="false" length="512" comment="API Endpoint"/>
+        <column xsi:type="varchar" name="method" nullable="false" length="10" comment="HTTP Method"/>
+        <column xsi:type="mediumtext" name="request_headers" nullable="true" comment="Request Headers JSON"/>
+        <column xsi:type="mediumtext" name="request_body" nullable="true" comment="Request Body"/>
+        <column xsi:type="mediumtext" name="response_headers" nullable="true" comment="Response Headers JSON"/>
+        <column xsi:type="mediumtext" name="response_body" nullable="true" comment="Response Body"/>
+        <column xsi:type="smallint" name="response_code" unsigned="true" nullable="true" comment="HTTP Response Code"/>
+        <column xsi:type="decimal" name="duration" scale="4" precision="10" unsigned="true" nullable="true"
+                comment="Request Duration in Milliseconds"/>
+        <column xsi:type="boolean" name="is_exception" nullable="false" default="false" comment="Is Exception"/>
+        <column xsi:type="int" name="store_id" unsigned="true" nullable="true" comment="Store ID"/>
+        <column xsi:type="varchar" name="ip_address" nullable="true" length="45" comment="IP Address"/>
+        <column xsi:type="varchar" name="user_agent" nullable="true" length="512" comment="User Agent"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Created At"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+
+        <index referenceId="HRYVINSKYI_API_LOG_ENTRY_ENDPOINT" indexType="btree">
+            <column name="endpoint"/>
+        </index>
+        <index referenceId="HRYVINSKYI_API_LOG_ENTRY_METHOD" indexType="btree">
+            <column name="method"/>
+        </index>
+        <index referenceId="HRYVINSKYI_API_LOG_ENTRY_RESPONSE_CODE" indexType="btree">
+            <column name="response_code"/>
+        </index>
+        <index referenceId="HRYVINSKYI_API_LOG_ENTRY_IS_EXCEPTION" indexType="btree">
+            <column name="is_exception"/>
+        </index>
+        <index referenceId="HRYVINSKYI_API_LOG_ENTRY_CREATED_AT" indexType="btree">
+            <column name="created_at"/>
+        </index>
+        <index referenceId="HRYVINSKYI_API_LOG_ENTRY_STORE_ID" indexType="btree">
+            <column name="store_id"/>
+        </index>
+    </table>
+</schema>

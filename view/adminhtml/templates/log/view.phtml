@@ -1,0 +1,299 @@
+<?php
+/**
+ * Copyright (c) 2025. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+
+/**
+ * @var \Hryvinskyi\ApiLogger\Block\Adminhtml\Log\View $block
+ * @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer
+ * @var \Magento\Framework\Escaper $escaper
+ */
+$logEntry = $block->getLogEntry();
+
+if (!$logEntry):
+    ?>
+    <div class="message message-error">
+        <?= $escaper->escapeHtml(__('Log entry not found.')) ?>
+    </div>
+    <?php
+    return;
+endif;
+
+$css = <<<CSS
+.log-detail-container {
+    background: #fff;
+    padding: 20px;
+    margin: 20px 0;
+}
+.log-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e3e3e3;
+    margin-bottom: 20px;
+}
+.log-detail-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.log-detail-actions {
+    display: flex;
+    gap: 10px;
+}
+.log-status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.log-status-badge.success {
+    background: #d4edda;
+    color: #155724;
+}
+.log-status-badge.warning {
+    background: #fff3cd;
+    color: #856404;
+}
+.log-status-badge.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+.log-status-badge.info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+.log-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.log-detail-item {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 4px;
+    border-left: 3px solid #1979c3;
+}
+.log-detail-item-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+.log-detail-item-value {
+    font-size: 14px;
+    color: #333;
+    word-break: break-all;
+}
+.log-detail-section {
+    margin-bottom: 30px;
+}
+.log-detail-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e3e3e3;
+}
+.log-code-block {
+    background: #f6f6f6;
+    padding: 20px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+    line-height: 1.5;
+}
+.log-exception-badge {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+CSS;
+
+echo $secureRenderer->renderTag(
+    'style',
+    [],
+    $css,
+    false
+);
+?>
+
+<div class="log-detail-container">
+    <!-- Header -->
+    <div class="log-detail-header">
+        <div>
+            <div class="log-detail-title">
+                <span class="log-status-badge <?= $escaper->escapeHtmlAttr($block->getStatusBadgeClass($logEntry->getResponseCode())) ?>">
+                    <?= $escaper->escapeHtml($logEntry->getMethod()) ?>
+                </span>
+                <span class="log-status-url">
+                    <?= $escaper->escapeHtml($logEntry->getEndpoint()) ?>
+                </span>
+                <?php if ($logEntry->isException()): ?>
+                    <span class="log-exception-badge">EXCEPTION</span>
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="log-detail-actions">
+            <button type="button" class="action-default scalable" onclick="location.href='<?= $escaper->escapeUrl($block->getBackUrl()) ?>'">
+                <span><?= $escaper->escapeHtml(__('Back')) ?></span>
+            </button>
+            <form method="post" action="<?= $escaper->escapeUrl($block->getDeleteUrl()) ?>" style="display: inline;">
+                <?= $block->getBlockHtml('formkey') ?>
+                <button type="button" class="action-default scalable delete" onclick="confirmDelete(this)">
+                    <span><?= $escaper->escapeHtml(__('Delete')) ?></span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Overview Grid -->
+    <div class="log-detail-grid">
+        <div class="log-detail-item">
+            <div class="log-detail-item-label"><?= $escaper->escapeHtml(__('Log ID')) ?></div>
+            <div class="log-detail-item-value">#<?= $escaper->escapeHtml($logEntry->getEntityId()) ?></div>
+        </div>
+
+        <div class="log-detail-item">
+            <div class="log-detail-item-label"><?= $escaper->escapeHtml(__('Response Code')) ?></div>
+            <div class="log-detail-item-value">
+                <span class="log-status-badge <?= $escaper->escapeHtmlAttr($block->getStatusBadgeClass($logEntry->getResponseCode())) ?>">
+                    <?= $escaper->escapeHtml($logEntry->getResponseCode() ?? 'N/A') ?>
+                </span>
+            </div>
+        </div>
+
+        <div class="log-detail-item">
+            <div class="log-detail-item-label"><?= $escaper->escapeHtml(__('Duration')) ?></div>
+            <div class="log-detail-item-value">
+                <?= $escaper->escapeHtml($logEntry->getDuration() !== null ? number_format($logEntry->getDuration(), 2) . ' ms' : 'N/A') ?>
+            </div>
+        </div>
+
+        <div class="log-detail-item">
+            <div class="log-detail-item-label"><?= $escaper->escapeHtml(__('Created At')) ?></div>
+            <div class="log-detail-item-value">
+                <?= $escaper->escapeHtml($logEntry->getCreatedAt() ?? 'N/A') ?>
+            </div>
+        </div>
+
+        <div class="log-detail-item">
+            <div class="log-detail-item-label"><?= $escaper->escapeHtml(__('IP Address')) ?></div>
+            <div class="log-detail-item-value">
+                <?= $escaper->escapeHtml($logEntry->getIpAddress() ?? 'N/A') ?>
+            </div>
+        </div>
+
+        <div class="log-detail-item">
+            <div class="log-detail-item-label"><?= $escaper->escapeHtml(__('Store ID')) ?></div>
+            <div class="log-detail-item-value">
+                <?= $escaper->escapeHtml($logEntry->getStoreId() ?? 'N/A') ?>
+            </div>
+        </div>
+
+        <?php if ($logEntry->getCustomerId()): ?>
+            <div class="log-detail-item">
+                <div class="log-detail-item-label"><?= $escaper->escapeHtml(__('Customer ID')) ?></div>
+                <div class="log-detail-item-value">
+                    <?= $escaper->escapeHtml($logEntry->getCustomerId()) ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($logEntry->getUserAgent()): ?>
+            <div class="log-detail-item" style="grid-column: 1 / -1;">
+                <div class="log-detail-item-label"><?= $escaper->escapeHtml(__('User Agent')) ?></div>
+                <div class="log-detail-item-value">
+                    <?= $escaper->escapeHtml($logEntry->getUserAgent()) ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Request Headers -->
+    <?php if ($logEntry->getRequestHeaders()): ?>
+        <div class="log-detail-section">
+            <div class="log-detail-section-title"><?= $escaper->escapeHtml(__('Request Headers')) ?></div>
+            <div class="log-code-block" data-json="<?= $escaper->escapeHtmlAttr($block->formatJson($logEntry->getRequestHeaders())) ?>"></div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Request Body -->
+    <?php if ($logEntry->getRequestBody()): ?>
+        <div class="log-detail-section">
+            <div class="log-detail-section-title"><?= $escaper->escapeHtml(__('Request Body')) ?></div>
+            <div class="log-code-block" data-json="<?= $escaper->escapeHtmlAttr($block->formatJson($logEntry->getRequestBody())) ?>"></div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Response Headers -->
+    <?php if ($logEntry->getResponseHeaders()): ?>
+        <div class="log-detail-section">
+            <div class="log-detail-section-title"><?= $escaper->escapeHtml(__('Response Headers')) ?></div>
+            <div class="log-code-block" data-json="<?= $escaper->escapeHtmlAttr($block->formatJson($logEntry->getResponseHeaders())) ?>"></div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Response Body -->
+    <?php if ($logEntry->getResponseBody()): ?>
+        <div class="log-detail-section">
+            <div class="log-detail-section-title"><?= $escaper->escapeHtml(__('Response Body')) ?></div>
+            <div class="log-code-block" data-json="<?= $escaper->escapeHtmlAttr($block->formatJson($logEntry->getResponseBody())) ?>"></div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<?php
+$script = <<<JS
+require(['jquery', 'Magento_Ui/js/modal/confirm', 'domReady!'], function($, confirmation) {
+    'use strict';
+
+    // Delete confirmation handler
+    window.confirmDelete = function(button) {
+        confirmation({
+            title: '{$block->escapeJs(__('Delete Log Entry'))}',
+            content: '{$block->escapeJs(__('Are you sure you want to delete this log entry?'))}',
+            actions: {
+                confirm: function() {
+                    $(button).closest('form').submit();
+                }
+            }
+        });
+    };
+
+    // Format all JSON blocks
+    const jsonBlocks = $('.log-code-block[data-json]');
+    jsonBlocks.each(function() {
+        const \$block = $(this);
+        const jsonData = \$block.attr('data-json');
+
+        if (jsonData) {
+            \$block.html('').jsonView(jsonData).show();
+        }
+    });
+});
+JS;
+echo $secureRenderer->renderTag(
+    'script',
+    [],
+    $script,
+    false
+);

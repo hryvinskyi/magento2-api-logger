@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2025. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- Preferences -->
+    <preference for="Hryvinskyi\ApiLogger\Api\ConfigInterface" type="Hryvinskyi\ApiLogger\Model\Config"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\EndpointMatcherInterface" type="Hryvinskyi\ApiLogger\Model\EndpointMatcher"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\SanitizerInterface" type="Hryvinskyi\ApiLogger\Model\Sanitizer"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\InterceptorInterface" type="Hryvinskyi\ApiLogger\Model\Interceptor"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\CleanerInterface" type="Hryvinskyi\ApiLogger\Model\Cleaner"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface" type="Hryvinskyi\ApiLogger\Model\Data\LogEntry"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface" type="Hryvinskyi\ApiLogger\Model\LogEntryRepository"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\Data\LogEntrySearchResultsInterface" type="Hryvinskyi\ApiLogger\Model\LogEntrySearchResults"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\Rest\ExtractorInterface" type="Hryvinskyi\ApiLogger\Model\Rest\Extractor"/>
+
+    <type name="Hryvinskyi\ApiLogger\Model\Config">
+        <arguments>
+            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
+        </arguments>
+    </type>
+    <type name="Hryvinskyi\ApiLogger\Model\EndpointMatcher">
+        <arguments>
+            <argument name="request" xsi:type="object">Hryvinskyi\ApiLogger\Model\Rest\FakeRequest</argument>
+        </arguments>
+    </type>
+    <type name="Hryvinskyi\ApiLogger\Model\Interceptor">
+        <arguments>
+            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
+        </arguments>
+    </type>
+    <type name="Hryvinskyi\ApiLogger\Model\Config\Backend\EndpointList">
+        <arguments>
+            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
+        </arguments>
+    </type>
+    <type name="Hryvinskyi\ApiLogger\Model\Rest\Extractor">
+        <arguments>
+            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
+        </arguments>
+    </type>
+
+    <!-- Virtual Types for UI Component Data Provider -->
+    <virtualType name="Hryvinskyi\ApiLogger\Ui\Listing\DataProvider\LogEntry" type="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider">
+        <arguments>
+            <argument name="collection" xsi:type="object" shared="false">Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry\Collection</argument>
+            <argument name="filterPool" xsi:type="object" shared="false">Hryvinskyi\ApiLogger\Ui\Listing\DataProvider\LogEntryFilterPool</argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="Hryvinskyi\ApiLogger\Ui\Listing\DataProvider\LogEntryFilterPool" type="Magento\Framework\View\Element\UiComponent\DataProvider\FilterPool">
+        <arguments>
+            <argument name="appliers" xsi:type="array">
+                <item name="regular" xsi:type="object">Magento\Framework\View\Element\UiComponent\DataProvider\RegularFilter</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry\Grid\Collection"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">hryvinskyi_api_log_entry</argument>
+            <argument name="resourceModel" xsi:type="string">Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry</argument>
+        </arguments>
+    </virtualType>
+
+    <!-- Data Provider Configuration -->
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="api_logger_log_listing_data_source" xsi:type="string">Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

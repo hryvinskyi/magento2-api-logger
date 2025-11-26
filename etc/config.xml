@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2025. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <api_logger>
+            <general>
+                <enabled>0</enabled>
+                <enabled_endpoints></enabled_endpoints>
+                <log_request_headers>1</log_request_headers>
+                <log_request_body>1</log_request_body>
+                <log_response_headers>1</log_response_headers>
+                <log_response_body>1</log_response_body>
+            </general>
+            <security>
+                <sanitize_secrets>1</sanitize_secrets>
+                <secret_fields>password,token,authorization,api_key,apikey,secret,access_token,refresh_token,private_key,client_secret,card_number,cvv,ssn</secret_fields>
+            </security>
+            <cleanup>
+                <enabled>1</enabled>
+                <retention_days>30</retention_days>
+            </cleanup>
+        </api_logger>
+    </default>
+</config>

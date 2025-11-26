@@ -1,0 +1,502 @@
+<?php
+/**
+ * Copyright (c) 2025. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+
+/**
+ * @var \Hryvinskyi\ApiLogger\Block\Adminhtml\System\Config\EndpointSelector $block
+ * @var \Magento\Framework\Data\Form\Element\AbstractElement $element
+ */
+$element = $block->getElement();
+$elementId = $block->escapeHtmlAttr($block->getElementId());
+$elementName = $block->escapeHtmlAttr($block->getElementName());
+$groupedEndpoints = $block->getGroupedEndpoints();
+$selectedEndpoints = $block->getSelectedEndpoints();
+$totalCount = $block->getTotalEndpointsCount();
+$selectedCount = $block->getSelectedEndpointsCount();
+$disabled = $element->getCanUseWebsiteValue()
+        || $element->getCanUseDefaultValue()
+        || $element->getCanRestoreToDefault();
+?>
+
+<style>
+    .endpoint-selector-container {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #fff;
+        max-width: 800px;
+    }
+    .endpoint-selector-header {
+        padding: 12px 16px;
+        background: #f5f5f5;
+        border-bottom: 1px solid #ccc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+    .endpoint-selector-footer {
+        padding: 10px 16px;
+        background: #f5f5f5;
+        border-top: 1px solid #ccc;
+        text-align: center;
+    }
+    .endpoint-selector-search {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 14px;
+        min-width: 70px;
+    }
+    .endpoint-selector-stats {
+        font-size: 13px;
+        color: #666;
+        white-space: nowrap;
+    }
+    .endpoint-selector-stats strong {
+        color: #1979c3;
+        font-weight: 600;
+    }
+    .endpoint-selector-actions {
+        display: flex;
+        gap: 8px;
+    }
+    .endpoint-selector-btn {
+        padding: 4px 10px;
+        border: 1px solid #ccc;
+        background: #fff;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s;
+        color: #666;
+        white-space: nowrap;
+    }
+    .endpoint-selector-btn:hover {
+        background: #e9e9e9;
+        border-color: #999;
+        color: #333;
+    }
+    .endpoint-selector-body {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    .endpoint-group {
+        border-bottom: 1px solid #e3e3e3;
+    }
+    .endpoint-group:last-child {
+        border-bottom: none;
+    }
+    .endpoint-group-header {
+        padding: 10px 16px;
+        background: #fafafa;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+    }
+    .endpoint-group-header:hover {
+        background: #f0f0f0;
+    }
+    .endpoint-group-title {
+        font-weight: 600;
+        font-size: 14px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .endpoint-group-toggle {
+        transition: transform 0.2s;
+        color: #666;
+    }
+    .endpoint-group.collapsed .endpoint-group-toggle {
+        transform: rotate(-90deg);
+    }
+    .endpoint-group-count {
+        font-size: 12px;
+        color: #666;
+        background: #e3e3e3;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    .endpoint-group-content {
+        padding: 8px 16px 8px 36px;
+        display: block;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    .endpoint-group.collapsed .endpoint-group-content {
+        display: none;
+    }
+    .endpoint-item {
+        padding: 6px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .endpoint-item.hidden {
+        display: none;
+    }
+    .endpoint-item input[type="checkbox"] {
+        margin: 0;
+        cursor: pointer;
+    }
+    .endpoint-item label {
+        margin: 0;
+        cursor: pointer;
+        font-size: 13px;
+        color: #333;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        min-width: 0;
+    }
+    .endpoint-item label:hover {
+        color: #1979c3;
+    }
+    .endpoint-methods {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+    .endpoint-method-badge {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 3px;
+        text-transform: uppercase;
+        line-height: 1;
+        letter-spacing: 0.5px;
+    }
+    .endpoint-method-badge.get {
+        background: #61affe;
+        color: #fff;
+    }
+    .endpoint-method-badge.post {
+        background: #49cc90;
+        color: #fff;
+    }
+    .endpoint-method-badge.put {
+        background: #fca130;
+        color: #fff;
+    }
+    .endpoint-method-badge.patch {
+        background: #50e3c2;
+        color: #000;
+    }
+    .endpoint-method-badge.delete {
+        background: #f93e3e;
+        color: #fff;
+    }
+    .endpoint-method-badge.options {
+        background: #0d5aa7;
+        color: #fff;
+    }
+    .endpoint-method-badge.head {
+        background: #9012fe;
+        color: #fff;
+    }
+    .endpoint-label-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-shrink: 0;
+        max-width: 300px;
+    }
+    .endpoint-value {
+        font-size: 10px;
+        color: #999;
+        font-family: monospace;
+        margin-left: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-shrink: 1;
+        min-width: 0;
+    }
+    .no-results {
+        padding: 20px;
+        text-align: center;
+        color: #999;
+        font-style: italic;
+        display: none;
+    }
+    .no-results.visible {
+        display: block;
+    }
+    .endpoint-selector-disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+</style>
+
+<div class="endpoint-selector-container<?= $disabled ? ' endpoint-selector-disabled' : '' ?>" id="<?= $elementId ?>-container">
+    <!-- Header with Search and Actions -->
+    <div class="endpoint-selector-header">
+        <input
+            type="text"
+            class="endpoint-selector-search ignore-validate"
+            id="<?= $elementId ?>-search"
+            placeholder="Search endpoints..."
+        />
+        <div class="endpoint-selector-actions">
+            <button type="button" class="endpoint-selector-btn ignore-validate" id="<?= $elementId ?>-select-all">
+                Select All
+            </button>
+            <button type="button" class="endpoint-selector-btn ignore-validate" id="<?= $elementId ?>-select-none">
+                Deselect All
+            </button>
+            <button type="button" class="endpoint-selector-btn ignore-validate" id="<?= $elementId ?>-expand-all">
+                Expand All
+            </button>
+            <button type="button" class="endpoint-selector-btn ignore-validate" id="<?= $elementId ?>-collapse-all">
+                Collapse All
+            </button>
+        </div>
+    </div>
+
+    <!-- Body with Grouped Checkboxes -->
+    <div class="endpoint-selector-body" id="<?= $elementId ?>-body">
+        <?php foreach ($groupedEndpoints as $group => $endpoints): ?>
+            <?php
+            // Check if this group has any selected endpoints
+            $hasSelected = false;
+            foreach ($endpoints as $endpoint) {
+                if (in_array($endpoint['value'], $selectedEndpoints, true)) {
+                    $hasSelected = true;
+                    break;
+                }
+            }
+            ?>
+            <div class="endpoint-group<?= !$hasSelected ? ' collapsed' : '' ?>" data-group="<?= $block->escapeHtmlAttr($group) ?>">
+                <div class="endpoint-group-header">
+                    <div class="endpoint-group-title">
+                        <span class="endpoint-group-toggle">▼</span>
+                        <?= $block->escapeHtml($group) ?>
+                    </div>
+                    <span class="endpoint-group-count">
+                        <span class="group-selected-count">0</span> / <?= count($endpoints) ?>
+                    </span>
+                </div>
+                <div class="endpoint-group-content">
+                    <?php foreach ($endpoints as $endpoint): ?>
+                        <?php
+                        $endpointValue = $endpoint['value'];
+                        $endpointLabel = $endpoint['label'];
+                        $endpointMethod = $endpoint['method'];
+                        $isChecked = in_array($endpointValue, $selectedEndpoints, true);
+                        $checkboxId = $elementId . '-' . md5($endpointValue);
+                        ?>
+                        <div class="endpoint-item" data-endpoint="<?= $block->escapeHtmlAttr($endpointValue) ?>" title="<?= $block->escapeHtmlAttr($endpointLabel . ' - ' . $endpointValue) ?>">
+                            <input
+                                type="checkbox"
+                                id="<?= $checkboxId ?>"
+                                value="<?= $block->escapeHtmlAttr($endpointValue) ?>"
+                                class="endpoint-checkbox ignore-validate"
+                                <?= $isChecked ? 'checked="checked"' : '' ?>
+                            />
+                            <div class="endpoint-methods">
+                                <span class="endpoint-method-badge <?= $block->escapeHtmlAttr(strtolower($endpointMethod)) ?>">
+                                    <?= $block->escapeHtml($endpointMethod) ?>
+                                </span>
+                            </div>
+                            <label for="<?= $checkboxId ?>">
+                                <span class="endpoint-label-text"><?= $block->escapeHtml($endpointLabel) ?></span>
+                                <span class="endpoint-value"><?= $block->escapeHtml($endpointValue) ?></span>
+                            </label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+        <div class="no-results" id="<?= $elementId ?>-no-results">
+            No endpoints found matching your search.
+        </div>
+    </div>
+
+    <!-- Footer with Statistics -->
+    <div class="endpoint-selector-footer">
+        <div class="endpoint-selector-stats">
+            Selected: <strong><span id="<?= $elementId ?>-selected-count"><?= $selectedCount ?></span></strong> /
+            <span id="<?= $elementId ?>-total-count"><?= $totalCount ?></span>
+        </div>
+    </div>
+
+    <!-- Hidden input to store selected values -->
+    <input
+        type="hidden"
+        id="<?= $elementId ?>"
+        name="<?= $elementName ?>"
+        value=""
+    />
+</div>
+
+<script>
+    require(['jquery', 'domReady!'], function($) {
+        const containerId = '<?= $elementId ?>';
+        const $container = $('#' + containerId + '-container');
+        const $search = $('#' + containerId + '-search');
+        const $hiddenInput = $('#' + containerId);
+        const $selectedCount = $('#' + containerId + '-selected-count');
+        const $totalCount = $('#' + containerId + '-total-count');
+        const $noResults = $('#' + containerId + '-no-results');
+
+        // Initialize: update hidden input with selected values
+        updateHiddenInput();
+
+        // Store original collapsed state for each group
+        const originalCollapsedState = {};
+        $('.endpoint-group', $container).each(function() {
+            const groupName = $(this).data('group');
+            originalCollapsedState[groupName] = $(this).hasClass('collapsed');
+        });
+
+        // Group toggle functionality
+        $container.on('click', '.endpoint-group-header', function(e) {
+            if ($(e.target).is('input')) return;
+            const $group = $(this).closest('.endpoint-group');
+            $group.toggleClass('collapsed');
+            // Update stored state when user manually toggles
+            const groupName = $group.data('group');
+            originalCollapsedState[groupName] = $group.hasClass('collapsed');
+        });
+
+        // Checkbox change handler
+        $container.on('change', '.endpoint-checkbox', function() {
+            updateHiddenInput();
+            updateGroupCounts();
+            updateStats();
+        });
+
+        // Select All button
+        $('#' + containerId + '-select-all').on('click', function() {
+            $('.endpoint-item:not(.hidden) .endpoint-checkbox', $container).prop('checked', true);
+            updateHiddenInput();
+            updateGroupCounts();
+            updateStats();
+        });
+
+        // Deselect All button
+        $('#' + containerId + '-select-none').on('click', function() {
+            $('.endpoint-checkbox', $container).prop('checked', false);
+            updateHiddenInput();
+            updateGroupCounts();
+            updateStats();
+        });
+
+        // Expand All button
+        $('#' + containerId + '-expand-all').on('click', function() {
+            $('.endpoint-group', $container).removeClass('collapsed');
+        });
+
+        // Collapse All button
+        $('#' + containerId + '-collapse-all').on('click', function() {
+            $('.endpoint-group', $container).addClass('collapsed');
+        });
+
+        // Search functionality
+        $search.on('input', function() {
+            const searchTerm = $(this).val().toLowerCase();
+            let visibleCount = 0;
+
+            $('.endpoint-item', $container).each(function() {
+                const $item = $(this);
+                const endpoint = $item.data('endpoint').toLowerCase();
+                const label = $item.find('label').text().toLowerCase();
+
+                if (searchTerm === '' || endpoint.includes(searchTerm) || label.includes(searchTerm)) {
+                    $item.removeClass('hidden');
+                    visibleCount++;
+                } else {
+                    $item.addClass('hidden');
+                }
+            });
+
+            // Show/hide groups based on visible items and expand groups with matches
+            $('.endpoint-group', $container).each(function() {
+                const $group = $(this);
+                const groupName = $group.data('group');
+                const visibleItems = $group.find('.endpoint-item:not(.hidden)').length;
+
+                if (visibleItems > 0) {
+                    $group.show();
+                    // Expand group when searching and it has visible items
+                    if (searchTerm !== '') {
+                        $group.removeClass('collapsed');
+                    } else {
+                        // Restore original collapsed state when search is cleared
+                        if (originalCollapsedState[groupName]) {
+                            $group.addClass('collapsed');
+                        } else {
+                            $group.removeClass('collapsed');
+                        }
+                    }
+                } else {
+                    $group.hide();
+                }
+            });
+
+            // Show no results message
+            if (visibleCount === 0) {
+                $noResults.addClass('visible');
+            } else {
+                $noResults.removeClass('visible');
+            }
+
+            $totalCount.text(visibleCount);
+        });
+
+        // Update hidden input with comma-separated selected values
+        function updateHiddenInput() {
+            const selected = [];
+            $('.endpoint-checkbox:checked', $container).each(function() {
+                selected.push($(this).val());
+            });
+            $hiddenInput.val(selected.join(','));
+        }
+
+        // Update group counts
+        function updateGroupCounts() {
+            $('.endpoint-group', $container).each(function() {
+                const $group = $(this);
+                const selectedCount = $group.find('.endpoint-checkbox:checked').length;
+                $group.find('.group-selected-count').text(selectedCount);
+            });
+        }
+
+        // Update stats
+        function updateStats() {
+            const selectedCount = $('.endpoint-checkbox:checked', $container).length;
+            $selectedCount.text(selectedCount);
+        }
+
+        // Initialize counts
+        updateGroupCounts();
+        updateStats();
+
+        // Handle "Use Default" / "Use Website" checkbox to toggle disabled state
+        const $inheritCheckbox = $hiddenInput.closest('tr').find('.use-default input[type="checkbox"]');
+
+        if ($inheritCheckbox.length > 0) {
+            // Function to update disabled state based on inherit checkbox
+            function updateDisabledState() {
+                if ($inheritCheckbox.is(':checked')) {
+                    $container.addClass('endpoint-selector-disabled');
+                } else {
+                    $container.removeClass('endpoint-selector-disabled');
+                }
+            }
+
+            // Listen to checkbox changes
+            $inheritCheckbox.on('change', updateDisabledState);
+
+            // Initial state
+            updateDisabledState();
+        }
+    });
+</script>
