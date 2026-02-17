@@ -2,7 +2,7 @@
     "name": "hryvinskyi/magento2-api-logger",
     "description": "Enterprise API logging solution with granular endpoint control, secret sanitization, and advanced viewer",
     "type": "magento2-module",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "license": "MIT",
     "authors": [
         {
@@ -12,7 +12,7 @@
     ],
     "require": {
         "php": "^8.1",
-        "hryvinskyi/magento2-base": "*",
+        "hryvinskyi/magento2-base": "^2.1.9",
         "magento/framework": "*",
         "magento/module-webapi": "*",
         "magento/module-backend": "*"

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="api_logger_menu"/>
+    <body>
+        <referenceBlock name="hryvinskyi.api.logger.menu">
+            <arguments>
+                <argument name="menu_title" xsi:type="string" translate="true">API Logger: Configuration</argument>
+                <argument name="items" xsi:type="array">
+                    <item name="configuration" xsi:type="array">
+                        <item name="class" xsi:type="array">
+                            <item name="current" xsi:type="boolean">true</item>
+                        </item>
+                    </item>
+                </argument>
+            </arguments>
+        </referenceBlock>
+    </body>
+</page>
