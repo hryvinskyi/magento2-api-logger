@@ -13,9 +13,9 @@
     <body>
         <referenceBlock name="hryvinskyi.api.logger.menu">
             <arguments>
-                <argument name="menu_title" xsi:type="string" translate="true">API Logger: Logs</argument>
+                <argument name="menu_title" xsi:type="string" translate="true">API Logger: Dashboard</argument>
                 <argument name="items" xsi:type="array">
-                    <item name="logs" xsi:type="array">
+                    <item name="dashboard" xsi:type="array">
                         <item name="class" xsi:type="array">
                             <item name="current" xsi:type="boolean">true</item>
                         </item>
@@ -24,7 +24,9 @@
             </arguments>
         </referenceBlock>
         <referenceContainer name="content">
-            <uiComponent name="api_logger_log_listing"/>
+            <block class="Hryvinskyi\ApiLogger\Block\Adminhtml\Log\Dashboard"
+                   name="api_logger.log.dashboard"
+                   template="Hryvinskyi_ApiLogger::log/dashboard.phtml"/>
         </referenceContainer>
     </body>
 </page>

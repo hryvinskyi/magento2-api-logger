@@ -13,7 +13,7 @@
              title="API Logger"
              module="Hryvinskyi_ApiLogger"
              sortOrder="1000"
-             action="api_logger/log/index"
+             action="api_logger/log/dashboard"
              parent="Magento_Backend::system_tools"
              resource="Hryvinskyi_ApiLogger::api_logger"/>
     </menu>

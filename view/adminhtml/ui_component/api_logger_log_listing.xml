@@ -59,9 +59,16 @@
 
     <columns name="api_logger_log_columns">
         <settings>
-            <editorConfig>
-                <param name="enabled" xsi:type="boolean">false</param>
-            </editorConfig>
+            <childDefaults>
+                <param name="fieldAction" xsi:type="array">
+                    <item name="provider" xsi:type="string">api_logger_log_listing.api_logger_log_listing.api_logger_log_columns.actions</item>
+                    <item name="target" xsi:type="string">applyAction</item>
+                    <item name="params" xsi:type="array">
+                        <item name="0" xsi:type="string">view</item>
+                        <item name="1" xsi:type="string">${ $.$data.rowIndex }</item>
+                    </item>
+                </param>
+            </childDefaults>
         </settings>
         <selectionsColumn name="ids">
             <settings>

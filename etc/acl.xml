@@ -12,7 +12,9 @@
         <resources>
             <resource id="Magento_Backend::admin">
                 <resource id="Hryvinskyi_ApiLogger::api_logger" title="API Logger" sortOrder="100">
+                    <resource id="Hryvinskyi_ApiLogger::dashboard" title="Dashboard" sortOrder="5"/>
                     <resource id="Hryvinskyi_ApiLogger::logs" title="View Logs" sortOrder="10"/>
+                    <resource id="Hryvinskyi_ApiLogger::replay" title="Replay Requests" sortOrder="15"/>
                     <resource id="Hryvinskyi_ApiLogger::delete" title="Delete Logs" sortOrder="20"/>
                     <resource id="Hryvinskyi_ApiLogger::config" title="Configuration" sortOrder="30"/>
                 </resource>

@@ -53,7 +53,8 @@ class Actions extends Column
                                 'api_logger/log/view',
                                 ['id' => $item['entity_id']]
                             ),
-                            'label' => __('View Details')
+                            'label' => __('View Details'),
+                            'hidden' => true
                         ],
                         'delete' => [
                             'href' => $this->urlBuilder->getUrl(

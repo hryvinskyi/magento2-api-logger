@@ -9,11 +9,24 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <update handle="styles"/>
+    <update handle="api_logger_menu"/>
     <head>
         <css src="Hryvinskyi_ApiLogger::css/json-view.css"/>
         <script src="Hryvinskyi_ApiLogger::js/json-view.js"/>
     </head>
     <body>
+        <referenceBlock name="hryvinskyi.api.logger.menu">
+            <arguments>
+                <argument name="menu_title" xsi:type="string" translate="true">API Logger: View Log</argument>
+                <argument name="items" xsi:type="array">
+                    <item name="logs" xsi:type="array">
+                        <item name="class" xsi:type="array">
+                            <item name="current" xsi:type="boolean">true</item>
+                        </item>
+                    </item>
+                </argument>
+            </arguments>
+        </referenceBlock>
         <referenceContainer name="content">
             <block class="Hryvinskyi\ApiLogger\Block\Adminhtml\Log\View"
                    name="api_logger.log.view"

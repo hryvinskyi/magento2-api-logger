@@ -15,12 +15,18 @@
     <preference for="Hryvinskyi\ApiLogger\Api\SanitizerInterface" type="Hryvinskyi\ApiLogger\Model\Sanitizer"/>
     <preference for="Hryvinskyi\ApiLogger\Api\InterceptorInterface" type="Hryvinskyi\ApiLogger\Model\Interceptor"/>
     <preference for="Hryvinskyi\ApiLogger\Api\CleanerInterface" type="Hryvinskyi\ApiLogger\Model\Cleaner"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\EndpointUrlResolverInterface" type="Hryvinskyi\ApiLogger\Model\EndpointUrlResolver"/>
     <preference for="Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface" type="Hryvinskyi\ApiLogger\Model\Data\LogEntry"/>
     <preference for="Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface" type="Hryvinskyi\ApiLogger\Model\LogEntryRepository"/>
     <preference for="Hryvinskyi\ApiLogger\Api\Data\LogEntrySearchResultsInterface" type="Hryvinskyi\ApiLogger\Model\LogEntrySearchResults"/>
     <preference for="Hryvinskyi\ApiLogger\Api\Rest\ExtractorInterface" type="Hryvinskyi\ApiLogger\Model\Rest\Extractor"/>
 
     <type name="Hryvinskyi\ApiLogger\Model\Config">
+        <arguments>
+            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
+        </arguments>
+    </type>
+    <type name="Hryvinskyi\ApiLogger\Model\EndpointUrlResolver">
         <arguments>
             <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
         </arguments>

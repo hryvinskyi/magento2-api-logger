@@ -82,15 +82,20 @@ class Cleaner implements CleanerInterface
             // Delete in batches to avoid locking the table for too long
             $deletedCount = 0;
             while ($deletedCount < $totalCount) {
+                $ids = $connection->fetchCol(
+                    $connection->select()
+                        ->from($tableName, 'entity_id')
+                        ->where('created_at < ?', $dateThreshold)
+                        ->limit(self::BATCH_SIZE)
+                );
+
+                if (empty($ids)) {
+                    break;
+                }
+
                 $affected = $connection->delete(
                     $tableName,
-                    [
-                        'created_at < ?' => $dateThreshold,
-                        'entity_id IN (?)' => $connection->select()
-                            ->from($tableName, 'entity_id')
-                            ->where('created_at < ?', $dateThreshold)
-                            ->limit(self::BATCH_SIZE)
-                    ]
+                    ['entity_id IN (?)' => $ids]
                 );
 
                 if ($affected === 0) {

@@ -1,0 +1,313 @@
+<?php
+/**
+ * Copyright (c) 2025. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+
+/**
+ * @var \Hryvinskyi\ApiLogger\Block\Adminhtml\Log\Dashboard $block
+ * @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+$css = <<<CSS
+.dashboard-container {
+    background: #fff;
+    margin: 20px 0;
+    border-radius: 12px;
+}
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e3e3e3;
+}
+.dashboard-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #4a3f39;
+}
+.dashboard-period-selector {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background: #f0f0f0;
+    border-radius: 8px;
+}
+.dashboard-period-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666666;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    line-height: 1;
+}
+.dashboard-period-btn:hover {
+    color: #4a3f39;
+}
+.dashboard-period-btn:active {
+    transform: scale(0.97);
+}
+.dashboard-period-btn.active {
+    background: #4a3f39;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(74, 63, 57, 0.2);
+}
+.dashboard-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-bottom: 24px;
+    background: #ffffff;
+    border: 1px solid #e3e3e3;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.dashboard-card {
+    padding: 20px 24px;
+    border-right: 1px solid #f0f0f0;
+    border-left: none;
+    text-align: center;
+    transition: background 0.12s ease;
+}
+.dashboard-card:last-child {
+    border-right: none;
+}
+.dashboard-card:hover {
+    background: #fafafa;
+}
+.dashboard-card.card-warning,
+.dashboard-card.card-danger,
+.dashboard-card.card-success {
+    border-left: none;
+}
+.dashboard-card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #4a3f39;
+    line-height: 1.2;
+}
+.dashboard-card-label {
+    font-size: 10px;
+    color: #999;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+}
+.dashboard-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.dashboard-chart-container {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #e3e3e3;
+}
+.dashboard-chart-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #999;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.dashboard-chart-canvas {
+    width: 100% !important;
+    max-height: 300px;
+}
+.dashboard-loading {
+    text-align: center;
+    padding: 40px;
+    color: #666666;
+    font-size: 13px;
+}
+@media (max-width: 1024px) {
+    .dashboard-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .dashboard-card {
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .dashboard-card:nth-child(2) {
+        border-right: none;
+    }
+    .dashboard-charts {
+        grid-template-columns: 1fr;
+    }
+}
+CSS;
+
+echo $secureRenderer->renderTag('style', [], $css, false);
+?>
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div class="dashboard-title"><?= $escaper->escapeHtml(__('API Logger Dashboard')) ?></div>
+        <div class="dashboard-period-selector">
+            <button type="button" class="dashboard-period-btn active" data-days="7">7 <?= $escaper->escapeHtml(__('Days')) ?></button>
+            <button type="button" class="dashboard-period-btn" data-days="14">14 <?= $escaper->escapeHtml(__('Days')) ?></button>
+            <button type="button" class="dashboard-period-btn" data-days="30">30 <?= $escaper->escapeHtml(__('Days')) ?></button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="dashboard-summary">
+        <div class="dashboard-card">
+            <div class="dashboard-card-value" id="totalRequests">-</div>
+            <div class="dashboard-card-label"><?= $escaper->escapeHtml(__('Total Requests')) ?></div>
+        </div>
+        <div class="dashboard-card card-success">
+            <div class="dashboard-card-value" id="avgDuration">-</div>
+            <div class="dashboard-card-label"><?= $escaper->escapeHtml(__('Avg Duration')) ?></div>
+        </div>
+        <div class="dashboard-card card-warning">
+            <div class="dashboard-card-value" id="errorRate">-</div>
+            <div class="dashboard-card-label"><?= $escaper->escapeHtml(__('Error Rate')) ?></div>
+        </div>
+        <div class="dashboard-card card-danger">
+            <div class="dashboard-card-value" id="exceptionCount">-</div>
+            <div class="dashboard-card-label"><?= $escaper->escapeHtml(__('Exceptions')) ?></div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="dashboard-charts">
+        <div class="dashboard-chart-container">
+            <div class="dashboard-chart-title"><?= $escaper->escapeHtml(__('Request Volume')) ?></div>
+            <canvas id="volumeChart" class="dashboard-chart-canvas"></canvas>
+        </div>
+        <div class="dashboard-chart-container">
+            <div class="dashboard-chart-title"><?= $escaper->escapeHtml(__('Slowest Endpoints (Avg ms)')) ?></div>
+            <canvas id="slowestChart" class="dashboard-chart-canvas"></canvas>
+        </div>
+    </div>
+</div>
+
+<?php
+$chartDataUrl = $escaper->escapeJs($block->getChartDataUrl());
+
+$script = <<<JS
+require(['jquery', 'chartJs', 'domReady!'], function(\$, Chart) {
+    'use strict';
+
+    var chartDataUrl = '{$chartDataUrl}';
+    var volumeChart = null;
+    var slowestChart = null;
+
+    function loadDashboard(days) {
+        \$.ajax({
+            url: chartDataUrl,
+            data: { days: days },
+            dataType: 'json',
+            cache: false
+        }).done(function(data) {
+            updateSummary(data.summary);
+            updateVolumeChart(data.volume);
+            updateSlowestChart(data.slowest);
+        });
+    }
+
+    function updateSummary(summary) {
+        \$('#totalRequests').text(summary.total_requests.toLocaleString());
+        \$('#avgDuration').text(summary.avg_duration + ' ms');
+        \$('#errorRate').text(summary.error_rate + '%');
+        \$('#exceptionCount').text(summary.exception_count.toLocaleString());
+    }
+
+    function updateVolumeChart(volume) {
+        var labels = volume.map(function(r) { return r.date; });
+        var counts = volume.map(function(r) { return parseInt(r.count); });
+
+        if (volumeChart) { volumeChart.destroy(); }
+
+        var ctx = document.getElementById('volumeChart').getContext('2d');
+        volumeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Requests',
+                    data: counts,
+                    borderColor: '#eb5202',
+                    backgroundColor: 'rgba(235, 82, 2, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#eb5202'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    function updateSlowestChart(slowest) {
+        var labels = slowest.map(function(r) {
+            var ep = r.endpoint;
+            return ep.length > 40 ? ep.substring(0, 37) + '...' : ep;
+        });
+        var durations = slowest.map(function(r) { return parseFloat(r.avg_duration).toFixed(1); });
+
+        if (slowestChart) { slowestChart.destroy(); }
+
+        var ctx = document.getElementById('slowestChart').getContext('2d');
+        slowestChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Avg Duration (ms)',
+                    data: durations,
+                    backgroundColor: function(context) {
+                        var val = context.raw;
+                        if (val >= 1000) return '#d9534f';
+                        if (val >= 500) return '#eb5202';
+                        if (val >= 100) return '#f0ad4e';
+                        return '#79a22e';
+                    },
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // Period selector
+    \$(document).on('click', '.dashboard-period-btn', function() {
+        \$('.dashboard-period-btn').removeClass('active');
+        \$(this).addClass('active');
+        loadDashboard(parseInt(\$(this).data('days')));
+    });
+
+    // Initial load
+    loadDashboard(7);
+});
+JS;
+
+echo $secureRenderer->renderTag('script', [], $script, false);
