@@ -1225,9 +1225,9 @@ require(['jquery', 'Magento_Ui/js/modal/confirm', 'Magento_Ui/js/modal/modal', '
         if (navigator.clipboard) {
             navigator.clipboard.writeText(curl).then(function() {
                 var btn = \$('#copyCurlBtn');
-                var origText = btn.text();
+                var origHtml = btn.html();
                 btn.text('{$copiedLabel}');
-                setTimeout(function() { btn.text(origText); }, 1500);
+                setTimeout(function() { btn.html(origHtml); }, 1500);
             });
         }
         \$('#exportDropdown').removeClass('open');

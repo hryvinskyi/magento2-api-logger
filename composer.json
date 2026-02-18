@@ -2,7 +2,7 @@
     "name": "hryvinskyi/magento2-api-logger",
     "description": "Enterprise API logging solution with granular endpoint control, secret sanitization, and advanced viewer",
     "type": "magento2-module",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "license": "MIT",
     "authors": [
         {
