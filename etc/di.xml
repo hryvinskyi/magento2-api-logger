@@ -20,6 +20,7 @@
     <preference for="Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface" type="Hryvinskyi\ApiLogger\Model\LogEntryRepository"/>
     <preference for="Hryvinskyi\ApiLogger\Api\Data\LogEntrySearchResultsInterface" type="Hryvinskyi\ApiLogger\Model\LogEntrySearchResults"/>
     <preference for="Hryvinskyi\ApiLogger\Api\Rest\ExtractorInterface" type="Hryvinskyi\ApiLogger\Model\Rest\Extractor"/>
+    <preference for="Hryvinskyi\ApiLogger\Api\DateFormatterInterface" type="Hryvinskyi\ApiLogger\Model\DateFormatter"/>
 
     <type name="Hryvinskyi\ApiLogger\Model\Config">
         <arguments>

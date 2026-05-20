@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Controller\Adminhtml\Log;
 
+use Hryvinskyi\ApiLogger\Api\DateFormatterInterface;
 use Hryvinskyi\ApiLogger\Api\EndpointUrlResolverInterface;
 use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
 use Magento\Backend\App\Action;
@@ -35,13 +36,15 @@ class Export extends Action implements HttpGetActionInterface
      * @param FileFactory $fileFactory
      * @param SerializerInterface $serializer
      * @param EndpointUrlResolverInterface $endpointUrlResolver
+     * @param DateFormatterInterface $dateFormatter
      */
     public function __construct(
         Context $context,
         private readonly LogEntryRepositoryInterface $logEntryRepository,
         private readonly FileFactory $fileFactory,
         private readonly SerializerInterface $serializer,
-        private readonly EndpointUrlResolverInterface $endpointUrlResolver
+        private readonly EndpointUrlResolverInterface $endpointUrlResolver,
+        private readonly DateFormatterInterface $dateFormatter
     ) {
         parent::__construct($context);
     }
@@ -99,7 +102,8 @@ class Export extends Action implements HttpGetActionInterface
                 ],
                 'entries' => [
                     [
-                        'startedDateTime' => $logEntry->getCreatedAt() ?? date('c'),
+                        'startedDateTime' => $this->dateFormatter->formatIso8601($logEntry->getCreatedAt())
+                            ?: date('c'),
                         'time' => $logEntry->getDuration() ?? 0,
                         'request' => [
                             'method' => $logEntry->getMethod(),

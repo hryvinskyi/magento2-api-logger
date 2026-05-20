@@ -16,6 +16,7 @@ use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 
 /**
  * Aggregate chart data for the dashboard
@@ -28,11 +29,13 @@ class ChartData extends Action implements HttpGetActionInterface, HttpPostAction
      * @param Context $context
      * @param ResourceConnection $resourceConnection
      * @param JsonFactory $jsonFactory
+     * @param TimezoneInterface $timezone
      */
     public function __construct(
         Context $context,
         private readonly ResourceConnection $resourceConnection,
-        private readonly JsonFactory $jsonFactory
+        private readonly JsonFactory $jsonFactory,
+        private readonly TimezoneInterface $timezone
     ) {
         parent::__construct($context);
     }
@@ -48,15 +51,28 @@ class ChartData extends Action implements HttpGetActionInterface, HttpPostAction
 
         $connection = $this->resourceConnection->getConnection();
         $tableName = $this->resourceConnection->getTableName('hryvinskyi_api_log_entry');
-        $dateFrom = date('Y-m-d', strtotime("-{$days} days"));
+
+        // Build the date window in the configured Magento timezone, then express it in UTC
+        // so the indexed created_at comparison stays UTC-to-UTC.
+        $displayTimezone = new \DateTimeZone($this->timezone->getConfigTimezone());
+        $offset = (new \DateTime('now', $displayTimezone))->format('P');
+        $dateFrom = (new \DateTime('today', $displayTimezone))
+            ->modify(sprintf('-%d days', $days))
+            ->setTimezone(new \DateTimeZone('UTC'))
+            ->format('Y-m-d H:i:s');
+
+        // Bucket the volume chart by calendar day in the display timezone, not UTC.
+        $localDateExpr = new \Zend_Db_Expr(
+            sprintf("DATE(CONVERT_TZ(created_at, '+00:00', %s))", $connection->quote($offset))
+        );
 
         $volumeSelect = $connection->select()
             ->from($tableName, [
-                'date' => new \Zend_Db_Expr('DATE(created_at)'),
+                'date' => $localDateExpr,
                 'count' => new \Zend_Db_Expr('COUNT(*)'),
             ])
             ->where('created_at >= ?', $dateFrom)
-            ->group(new \Zend_Db_Expr('DATE(created_at)'))
+            ->group($localDateExpr)
             ->order('date ASC');
         $volume = $connection->fetchAll($volumeSelect);
 

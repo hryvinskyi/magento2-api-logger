@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Controller\Adminhtml\Log;
 
+use Hryvinskyi\ApiLogger\Api\DateFormatterInterface;
 use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
 use Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry\CollectionFactory;
 use Magento\Backend\App\Action;
@@ -31,12 +32,14 @@ class Compare extends Action implements HttpGetActionInterface, HttpPostActionIn
      * @param LogEntryRepositoryInterface $logEntryRepository
      * @param CollectionFactory $collectionFactory
      * @param JsonFactory $jsonFactory
+     * @param DateFormatterInterface $dateFormatter
      */
     public function __construct(
         Context $context,
         private readonly LogEntryRepositoryInterface $logEntryRepository,
         private readonly CollectionFactory $collectionFactory,
-        private readonly JsonFactory $jsonFactory
+        private readonly JsonFactory $jsonFactory,
+        private readonly DateFormatterInterface $dateFormatter
     ) {
         parent::__construct($context);
     }
@@ -103,7 +106,7 @@ class Compare extends Action implements HttpGetActionInterface, HttpPostActionIn
                 'method' => $item->getData('method'),
                 'endpoint' => $item->getData('endpoint'),
                 'response_code' => $responseCode,
-                'created_at' => $item->getData('created_at'),
+                'created_at' => $this->dateFormatter->formatDateTime($item->getData('created_at')),
                 'badge_class' => $this->getBadgeClass($responseCode ? (int)$responseCode : null),
             ];
         }
@@ -152,7 +155,7 @@ class Compare extends Action implements HttpGetActionInterface, HttpPostActionIn
             'request_body' => $entry->getRequestBody(),
             'response_headers' => $entry->getResponseHeaders(),
             'response_body' => $entry->getResponseBody(),
-            'created_at' => $entry->getCreatedAt(),
+            'created_at' => $this->dateFormatter->formatDateTime($entry->getCreatedAt()),
         ];
     }
 

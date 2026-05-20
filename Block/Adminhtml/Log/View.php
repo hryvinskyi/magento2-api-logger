@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Block\Adminhtml\Log;
 
 use Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface;
+use Hryvinskyi\ApiLogger\Api\DateFormatterInterface;
 use Hryvinskyi\ApiLogger\Api\EndpointUrlResolverInterface;
 use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
 use Magento\Backend\Block\Template;
@@ -31,6 +32,7 @@ class View extends Template
      * @param SerializerInterface $serializer
      * @param StoreManagerInterface $storeManager
      * @param EndpointUrlResolverInterface $endpointUrlResolver
+     * @param DateFormatterInterface $dateFormatter
      * @param array<string, mixed> $data
      */
     public function __construct(
@@ -39,9 +41,21 @@ class View extends Template
         private readonly SerializerInterface $serializer,
         private readonly StoreManagerInterface $storeManager,
         private readonly EndpointUrlResolverInterface $endpointUrlResolver,
+        private readonly DateFormatterInterface $dateFormatter,
         array $data = []
     ) {
         parent::__construct($context, $data);
+    }
+
+    /**
+     * Format a stored UTC timestamp for admin display in the configured Magento timezone
+     *
+     * @param string|null $date Timestamp as stored in the database (UTC)
+     * @return string Localized datetime, or an empty string when the input is empty or invalid
+     */
+    public function getFormattedDate(?string $date): string
+    {
+        return $this->dateFormatter->formatDateTime($date);
     }
 
     /**

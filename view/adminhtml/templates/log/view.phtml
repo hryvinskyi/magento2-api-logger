@@ -836,7 +836,7 @@ echo $secureRenderer->renderTag(
         <div class="log-detail-item">
             <div class="log-detail-item-label"><?= $escaper->escapeHtml(__('Created At')) ?></div>
             <div class="log-detail-item-value">
-                <?= $escaper->escapeHtml($logEntry->getCreatedAt() ?? 'N/A') ?>
+                <?= $escaper->escapeHtml($block->getFormattedDate($logEntry->getCreatedAt()) ?: 'N/A') ?>
             </div>
         </div>
 
