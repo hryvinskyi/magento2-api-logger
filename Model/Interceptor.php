@@ -71,7 +71,8 @@ class Interceptor implements InterceptorInterface
         $logEntry->setEndpoint($endpoint);
         $logEntry->setMethod($method);
         $logEntry->setStoreId($storeId);
-        $logEntry->setIpAddress($this->remoteAddress->getRemoteAddress());
+        // RemoteAddress::getRemoteAddress() returns false in CLI/cron context; coerce to null for the ?string setter
+        $logEntry->setIpAddress($this->remoteAddress->getRemoteAddress() ?: null);
 
         // Set user agent
         if (isset($requestHeaders['User-Agent'])) {

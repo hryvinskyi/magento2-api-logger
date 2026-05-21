@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2026-05-21
+
+### Fixed
+- API requests triggered from CLI commands (`bin/magento <command>`) or Magento cron
+  are now logged correctly. `RemoteAddress::getRemoteAddress()` returns `false` in CLI
+  context, which raised a `TypeError` against the `?string` `setIpAddress()` signature
+  and aborted the log write; the value is now coerced to `null` ([#2]).
+
 ## [1.1.3] - 2026-05-20
 
 ### Added
@@ -57,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release.
 
+[1.1.4]: https://github.com/hryvinskyi/magento2-api-logger/compare/1.1.3...1.1.4
 [1.1.3]: https://github.com/hryvinskyi/magento2-api-logger/compare/1.1.2...1.1.3
 [1.1.2]: https://github.com/hryvinskyi/magento2-api-logger/compare/1.1.1...1.1.2
 [1.1.1]: https://github.com/hryvinskyi/magento2-api-logger/compare/1.1.0...1.1.1
@@ -66,3 +75,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.0.1]: https://github.com/hryvinskyi/magento2-api-logger/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/hryvinskyi/magento2-api-logger/releases/tag/1.0.0
 [#1]: https://github.com/hryvinskyi/magento2-api-logger/issues/1
+[#2]: https://github.com/hryvinskyi/magento2-api-logger/issues/2
