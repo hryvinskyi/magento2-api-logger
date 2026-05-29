@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-29
+
+### Added
+- **Request Headers** and **Response Headers** columns on the API log grid, hidden by
+  default and toggleable from the grid's "Columns" control. Each cell renders the headers
+  as structured `Key: value` rows with an inline "Show all / Show less" read-more toggle
+  (only the first few rows are shown until expanded), and both columns are text-filterable
+  so operators can find calls by a header value (e.g. an order reference, tracking number
+  or trace ID) that travels in the headers ([#3]).
+
 ## [1.1.4] - 2026-05-21
 
 ### Fixed
@@ -65,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release.
 
+[1.2.0]: https://github.com/hryvinskyi/magento2-api-logger/compare/1.1.4...1.2.0
 [1.1.4]: https://github.com/hryvinskyi/magento2-api-logger/compare/1.1.3...1.1.4
 [1.1.3]: https://github.com/hryvinskyi/magento2-api-logger/compare/1.1.2...1.1.3
 [1.1.2]: https://github.com/hryvinskyi/magento2-api-logger/compare/1.1.1...1.1.2
@@ -76,3 +87,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.0.0]: https://github.com/hryvinskyi/magento2-api-logger/releases/tag/1.0.0
 [#1]: https://github.com/hryvinskyi/magento2-api-logger/issues/1
 [#2]: https://github.com/hryvinskyi/magento2-api-logger/issues/2
+[#3]: https://github.com/hryvinskyi/magento2-api-logger/issues/3

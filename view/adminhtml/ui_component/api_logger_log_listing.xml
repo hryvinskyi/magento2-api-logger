@@ -130,6 +130,30 @@
             </settings>
         </column>
 
+        <column name="request_headers"
+                class="Hryvinskyi\ApiLogger\Ui\Component\Listing\Column\Headers"
+                component="Hryvinskyi_ApiLogger/js/grid/columns/headers">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Request Headers</label>
+                <sortable>false</sortable>
+                <disableAction>true</disableAction>
+                <visible>false</visible>
+            </settings>
+        </column>
+
+        <column name="response_headers"
+                class="Hryvinskyi\ApiLogger\Ui\Component\Listing\Column\Headers"
+                component="Hryvinskyi_ApiLogger/js/grid/columns/headers">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Response Headers</label>
+                <sortable>false</sortable>
+                <disableAction>true</disableAction>
+                <visible>false</visible>
+            </settings>
+        </column>
+
         <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date" component="Magento_Ui/js/grid/columns/date">
             <settings>
                 <filter>dateRange</filter>

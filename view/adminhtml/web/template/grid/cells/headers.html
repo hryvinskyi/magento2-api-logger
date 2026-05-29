@@ -1,0 +1,29 @@
+<!--
+/**
+ * Copyright (c) 2025. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+-->
+<div class="data-grid-cell-content aplog-headers">
+    <!-- ko if: $col.getCount($row()) > 0 -->
+    <dl class="aplog-headers__list">
+        <!-- ko foreach: { data: $col.getVisibleRows($row()), as: 'header' } -->
+        <div class="aplog-headers__row">
+            <!-- ko if: header.key -->
+            <dt class="aplog-headers__key" text="header.key" attr="{title: header.key}"></dt>
+            <!-- /ko -->
+            <dd class="aplog-headers__val" text="header.value" attr="{title: header.value}"></dd>
+        </div>
+        <!-- /ko -->
+    </dl>
+    <!-- ko if: $col.isExpandable($row()) -->
+    <span class="aplog-headers__toggle"
+          click="function (data, event) { return $col.onToggle($row(), event); }"
+          text="$col.toggleLabel($row())"></span>
+    <!-- /ko -->
+    <!-- /ko -->
+    <!-- ko ifnot: $col.getCount($row()) > 0 -->
+    <span class="aplog-headers__empty">&#8212;</span>
+    <!-- /ko -->
+</div>

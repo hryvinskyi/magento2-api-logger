@@ -38,6 +38,7 @@ Side-by-side comparison of two log entries and request replay for debugging.
 - **Performance Metrics** — per-endpoint statistics including avg/min/max duration, request count, and percentile rank
 - **Automatic Cleanup** — cron-based retention policy with configurable period and batch deletion
 - **Admin Grid** — sortable, filterable listing with mass delete, column bookmarks, and date range filters
+- **Header Columns** — optional, default-hidden request/response header columns that are text-filterable, so you can find calls by a header value (order reference, tracking number, trace ID)
 - **Multi-Store Support** — store-scoped logging configuration with store name display in log viewer
 
 ## Requirements
@@ -109,8 +110,9 @@ Navigate to **System > Tools > API Logger > Dashboard** to view analytics:
 Navigate to **System > Tools > API Logger > Logs**:
 
 1. Use grid filters to find specific logs by endpoint, method, response code, IP address, or date range
-2. Click **View** on any entry to open the detail view
-3. Detail view provides:
+2. Enable the **Request Headers** / **Response Headers** columns from the grid's **Columns** control (hidden by default) to filter calls by a header value — useful for finding every call carrying a given order reference, tracking number, or trace ID
+3. Click **View** on any entry to open the detail view
+4. Detail view provides:
    - Formatted JSON request/response with syntax highlighting and search
    - Query parameters extracted from endpoint URL
    - Performance metrics (duration, percentile rank among similar endpoints)
