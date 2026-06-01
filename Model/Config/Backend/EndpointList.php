@@ -42,8 +42,8 @@ class EndpointList extends Value
         ScopeConfigInterface $config,
         TypeListInterface $cacheTypeList,
         private readonly SerializerInterface $serializer,
-        AbstractResource $resource = null,
-        AbstractDb $resourceCollection = null,
+        ?AbstractResource $resource = null,
+        ?AbstractDb $resourceCollection = null,
         array $data = []
     ) {
         parent::__construct(
