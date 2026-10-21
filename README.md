@@ -242,6 +242,8 @@ Indexed columns: `endpoint`, `method`, `response_code`, `is_exception`, `created
 
 This module is licensed under the [MIT License](LICENSE).
 
+The admin icons are from [Lucide](https://lucide.dev) (ISC licence; the licence text ships beside them in `view/adminhtml/web/images/icons/`).
+
 ## Support
 
 For issues, feature requests, or questions, please contact the author or submit an issue on GitHub.

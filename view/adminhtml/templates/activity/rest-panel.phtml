@@ -7,6 +7,7 @@
 
 declare(strict_types=1);
 
+use Hryvinskyi\ActivityLog\Api\IconsInterface;
 use Hryvinskyi\ApiLogger\ViewModel\RestCallPanel;
 use Magento\Framework\Escaper;
 use Magento\Framework\View\Element\Template;
@@ -20,6 +21,10 @@ $panel = $block->getData('panel');
 if (!$panel instanceof RestCallPanel) {
     return;
 }
+$icons = $block->getData('icons');
+$icon = static fn (string $id, string $class): string => $icons instanceof IconsInterface
+    ? $icons->render($id, $class)
+    : '';
 $entry = $panel->entry();
 ?>
 <?php if ($entry === null): ?>
@@ -56,26 +61,19 @@ $parts = [
         <div class="rest-panel__actions">
             <?php if ($panel->canReplay()): ?>
                 <button type="button" class="rest-button" data-role="replay">
-                    <svg class="rest-button__icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M3 12a9 9 0 109-9 9 9 0 00-7 3.3"/>
-                        <path d="M3 3v5h5"/>
-                    </svg>
+                    <?= /* @noEscape */ $icon('Hryvinskyi_ApiLogger::rotate-ccw', 'rest-button__icon') ?>
                     <?= $escaper->escapeHtml(__('Replay')) ?>
                 </button>
             <?php endif; ?>
             <button type="button" class="rest-button" data-role="compare">
-                <svg class="rest-button__icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 5h7v14H4zM13 5h7v14h-7z"/>
-                </svg>
+                <?= /* @noEscape */ $icon('Hryvinskyi_ApiLogger::columns-2', 'rest-button__icon') ?>
                 <?= $escaper->escapeHtml(__('Compare')) ?>
             </button>
             <div class="rest-panel__export">
                 <button type="button" class="rest-button" data-role="export-toggle" aria-expanded="false"
                         aria-haspopup="true">
                     <?= $escaper->escapeHtml(__('Export')) ?>
-                    <svg class="rest-button__caret" viewBox="0 0 10 6" aria-hidden="true">
-                        <path d="M1 1l4 4 4-4"/>
-                    </svg>
+                    <?= /* @noEscape */ $icon('Hryvinskyi_ApiLogger::chevron-down', 'rest-button__caret') ?>
                 </button>
                 <ul class="rest-panel__export-menu" data-role="export-menu" hidden>
                     <?php foreach ($panel->exports($entry) as $export): ?>

@@ -97,8 +97,13 @@
     cursor: pointer;
 }
 .endpoint-group-toggle {
+    display: inline-flex;
     transition: transform 0.2s;
     color: #666;
+}
+.endpoint-group-toggle__icon {
+    width: 14px;
+    height: 14px;
 }
 .endpoint-group.collapsed .endpoint-group-toggle {
     transform: rotate(-90deg);

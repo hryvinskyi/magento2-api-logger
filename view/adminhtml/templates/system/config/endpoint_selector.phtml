@@ -17,6 +17,7 @@ use Magento\Framework\Escaper;
 
 $elementId = $block->getElementId();
 $selected = $block->getSelectedEndpoints();
+$toggleIcon = $block->getToggleIcon();
 ?>
 <div class="endpoint-selector-container"
      data-mage-init='<?= $escaper->escapeHtmlAttr($block->getScriptConfig()) ?>'>
@@ -55,7 +56,7 @@ $selected = $block->getSelectedEndpoints();
                     <div class="endpoint-group-title">
                         <input type="checkbox" class="group-select-all ignore-validate" data-role="group-toggle"
                                title="<?= $escaper->escapeHtmlAttr($groupToggleTitle) ?>">
-                        <span class="endpoint-group-toggle" aria-hidden="true">▼</span>
+                        <span class="endpoint-group-toggle" aria-hidden="true"><?= /* @noEscape */ $toggleIcon ?></span>
                         <?= $escaper->escapeHtml($group) ?>
                     </div>
                     <span class="endpoint-group-count">

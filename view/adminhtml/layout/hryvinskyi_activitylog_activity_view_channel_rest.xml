@@ -19,6 +19,7 @@
                    aclResource="Hryvinskyi_ApiLogger::logs">
                 <arguments>
                     <argument name="panel" xsi:type="object">Hryvinskyi\ApiLogger\ViewModel\RestCallPanel</argument>
+                    <argument name="icons" xsi:type="object">Hryvinskyi\ActivityLog\Api\IconsInterface</argument>
                 </arguments>
             </block>
         </referenceContainer>

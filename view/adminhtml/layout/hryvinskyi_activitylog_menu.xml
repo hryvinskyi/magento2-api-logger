@@ -18,7 +18,7 @@
                         <item name="route" xsi:type="string">api_logger/log/index</item>
                         <item name="resource" xsi:type="string">Hryvinskyi_ApiLogger::logs</item>
                         <item name="sort_order" xsi:type="number">20</item>
-                        <item name="icon" xsi:type="string"><![CDATA[<svg class="menu-item-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>]]></item>
+                        <item name="icon" xsi:type="string"><![CDATA[<svg aria-hidden="true" focusable="false" class="menu-item-icon lucide lucide-code-xml" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>]]></item>
                     </item>
                     <item name="rest_settings" xsi:type="array">
                         <item name="label" xsi:type="string" translate="true">REST Logging Settings</item>
@@ -28,7 +28,7 @@
                         </item>
                         <item name="resource" xsi:type="string">Hryvinskyi_ApiLogger::config_api_logger</item>
                         <item name="sort_order" xsi:type="number">110</item>
-                        <item name="icon" xsi:type="string"><![CDATA[<svg class="menu-item-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>]]></item>
+                        <item name="icon" xsi:type="string"><![CDATA[<svg aria-hidden="true" focusable="false" class="menu-item-icon lucide lucide-settings" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>]]></item>
                     </item>
                 </argument>
             </arguments>

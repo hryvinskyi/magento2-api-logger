@@ -94,6 +94,18 @@ class RestPanelRenderTest extends AbstractBackendController
         self::assertIsArray($labels);
         self::assertSame('Identical in the first 256 KB', $labels['identicalInFirst'] ?? null);
 
+        foreach (['rest-button__icon lucide-rotate-ccw', 'rest-button__icon lucide-columns-2',
+                     'rest-button__caret lucide-chevron-down'] as $icon) {
+            [$class, $name] = explode(' ', $icon);
+            $nodes = $xpath->query(sprintf(
+                './/*[local-name()="svg"][contains(@class, "%s")][contains(@class, "%s")][@aria-hidden="true"]',
+                $class,
+                $name
+            ), $panel);
+            self::assertInstanceOf(\DOMNodeList::class, $nodes);
+            self::assertSame(1, $nodes->length, $icon);
+        }
+
         self::assertSame(
             '401 Unauthorized',
             trim($this->single($xpath, './/span[contains(@class, "rest-status")]', $panel)->textContent)

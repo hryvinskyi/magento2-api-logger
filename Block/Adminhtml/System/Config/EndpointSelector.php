@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Block\Adminhtml\System\Config;
 
+use Hryvinskyi\ActivityLog\Api\IconsInterface;
 use Hryvinskyi\ApiLogger\Model\Config\Source\Endpoints;
 use Magento\Backend\Block\Template\Context;
 use Magento\Config\Block\System\Config\Form\Field;
@@ -38,12 +39,14 @@ class EndpointSelector extends Field
      * @param Context $context
      * @param Endpoints $endpointsSource
      * @param JsonHexTag $json
+     * @param IconsInterface $icons
      * @param array<string,mixed> $data
      */
     public function __construct(
         Context $context,
         private readonly Endpoints $endpointsSource,
         private readonly JsonHexTag $json,
+        private readonly IconsInterface $icons,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -132,6 +135,16 @@ class EndpointSelector extends Field
     public function getTotalEndpointsCount(): int
     {
         return array_sum(array_map('count', $this->getGroupedEndpoints()));
+    }
+
+    /**
+     * The icon of a group's expand and collapse toggle, as inline SVG
+     *
+     * @return string
+     */
+    public function getToggleIcon(): string
+    {
+        return $this->icons->render('Hryvinskyi_ApiLogger::chevron-down', 'endpoint-group-toggle__icon');
     }
 
     /**

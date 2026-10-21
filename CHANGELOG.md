@@ -112,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compare picks another call to the same endpoint, by status or correlation id, and shows both
   bodies as a line diff. Each body is compared up to 256 KB.
 - **REST response codes** widget on the Activity Log dashboard.
+- Admin icons from Lucide, rendered inline through the Activity Log's icon renderer.
 - On upgrade, the calls 1.x stored are added to the journal as activities of the `rest` channel
   with the actor "unknown (logged before 2.0)".
 
