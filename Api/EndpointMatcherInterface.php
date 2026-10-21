@@ -10,18 +10,32 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Api;
 
 /**
- * Endpoint Pattern Matcher Interface
+ * Tells whether a REST call is one of the endpoints chosen for logging
  *
- * Responsible for matching API endpoint paths against configured patterns
+ * @api
  */
 interface EndpointMatcherInterface
 {
     /**
+     * What separates the method from the route in a pattern: "GET|/V1/products"
+     */
+    public const SEPARATOR = '|';
+
+    /**
+     * What starts a segment of a pattern that stands for any one called segment: ":sku" of "/V1/products/:sku"
+     */
+    public const PARAMETER_PREFIX = ':';
+
+    /**
+     * A last segment of a pattern that stands for the rest of the called path: "/V1/customers/*"
+     */
+    public const REST_OF_PATH = '*';
+
+    /**
      * Check if endpoint matches the given pattern
      *
-     * Supports wildcard patterns like:
-     * - /V1/products/:id (matches any product ID)
-     * - /V1/customers/* (matches any customer endpoint)
+     * Patterns are "METHOD|/V1/route": "GET|/V1/products/:sku" matches any one SKU, "GET|/V1/customers/*" any path
+     * under customers.
      *
      * @param string $endpoint The endpoint to check
      * @param string $method The HTTP method (e.g., GET, POST, etc.)

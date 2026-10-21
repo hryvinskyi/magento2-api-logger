@@ -1,6 +1,6 @@
-# Advanced API Logger for Adobe Commerce (Magento 2)
+# API Logger for Adobe Commerce (Magento 2)
 
-Enterprise API logging solution for Magento 2 with granular endpoint control, secret sanitization, analytics dashboard, request replay, and an advanced log viewer.
+Logs the calls made to your store's REST API. Each call is journaled in the Activity Log. Its request, response, headers and timing are stored next to it, with secrets masked.
 
 [![Latest Stable Version](https://poser.pugx.org/hryvinskyi/magento2-api-logger/v/stable)](https://packagist.org/packages/hryvinskyi/magento2-api-logger)
 [![Total Downloads](https://poser.pugx.org/hryvinskyi/magento2-api-logger/downloads)](https://packagist.org/packages/hryvinskyi/magento2-api-logger)
@@ -8,44 +8,23 @@ Enterprise API logging solution for Magento 2 with granular endpoint control, se
 [![Latest Unstable Version](https://poser.pugx.org/hryvinskyi/magento2-api-logger/v/unstable)](https://packagist.org/packages/hryvinskyi/magento2-api-logger)
 [![License](https://poser.pugx.org/hryvinskyi/magento2-api-logger/license)](https://packagist.org/packages/hryvinskyi/magento2-api-logger)
 
-## Screenshots
+## What it does
 
-### Dashboard
-Real-time analytics with request volume charts, slowest endpoints, error rate, and summary cards. Supports 7 / 14 / 30 day period switching.
-
-![Dashboard](docs/dashboard.jpg)
-
-### Log Detail View
-Full request/response inspection with formatted JSON, syntax highlighting, performance metrics, query parameters, and quick actions.
-
-![Log View](docs/log_view.jpg)
-
-### Compare & Replay
-Side-by-side comparison of two log entries and request replay for debugging.
-
-![Compare](docs/compare.jpg)
-
-## Features
-
-- **Granular Endpoint Control** — whitelist specific REST API endpoints with pattern-based matching and per-endpoint HTTP method filtering
-- **Selective Response Code Logging** — choose which HTTP status codes to capture (200, 400, 401, 404, 500, etc.)
-- **Secret Sanitization** — automatic detection and hashing of sensitive fields (passwords, tokens, API keys, card numbers) with customizable field list
-- **Analytics Dashboard** — request volume over time, top 10 slowest endpoints, error rate, exception count with 7/14/30 day period views
-- **Advanced Log Viewer** — formatted JSON with syntax highlighting, query parameter extraction, content-type badges, body size display, and status code badges
-- **Request Replay** — re-execute original API requests and compare response status, duration, and body against the original
-- **Compare Mode** — side-by-side comparison of any two log entries with related endpoint search
-- **Export** — download logs as HAR (HTTP Archive) or raw HTTP (RFC 7230) format
-- **Performance Metrics** — per-endpoint statistics including avg/min/max duration, request count, and percentile rank
-- **Automatic Cleanup** — cron-based retention policy with configurable period and batch deletion
-- **Admin Grid** — sortable, filterable listing with mass delete, column bookmarks, and date range filters
-- **Header Columns** — optional, default-hidden request/response header columns that are text-filterable, so you can find calls by a header value (order reference, tracking number, trace ID)
-- **Multi-Store Support** — store-scoped logging configuration with store name display in log viewer
+- Logs the REST calls you select, by endpoint and HTTP method, and optionally only some response codes.
+- Shows each call on its Activity Log page: request and response headers, and a paged body viewer.
+- Masks secret values before anything is stored.
+- Exports a call as HAR, raw HTTP or a cURL command.
+- Replays a call against this store or another one.
+- Compares a call with another call to the same endpoint.
+- Adds a **REST response codes** widget to the Activity Log dashboard.
+- Removes old calls with the Activity Log's retention job.
 
 ## Requirements
 
 - PHP 8.1 or higher
 - Magento 2.4.x (Open Source or Adobe Commerce)
-- `hryvinskyi/magento2-base` module
+- `hryvinskyi/magento2-activity-log` `^1.0`
+- `hryvinskyi/magento2-base` `^2.2`
 
 ## Installation
 
@@ -58,8 +37,8 @@ bin/magento cache:flush
 ```
 
 ### Manual Installation
-1. Download the module from GitHub
-2. Place it in `app/code/Hryvinskyi/ApiLogger`
+1. Download the module from GitHub.
+2. Place it in `app/code/Hryvinskyi/ApiLogger`.
 3. Run:
 ```bash
 bin/magento module:enable Hryvinskyi_ApiLogger
@@ -67,109 +46,156 @@ bin/magento setup:upgrade
 bin/magento cache:flush
 ```
 
+## Where things are in the admin
+
+| What | Where |
+|------|-------|
+| List of logged calls | **Activity Log > REST API Logs** |
+| One call | **View** on a row of the list, or the call's page in **Activity Log > All Activity** |
+| Response codes widget | **Activity Log > Dashboard** |
+| Settings | **Stores > Configuration > Hryvinskyi Extensions > REST API Logging**. The Activity Log pages link to it as **REST Logging Settings** |
+| Secret field names | **Stores > Configuration > Hryvinskyi Extensions > Activity Log > Secrets** |
+
 ## Configuration
 
-Navigate to **Stores > Configuration > Hryvinskyi Extensions > API Logger**
+Go to **Stores > Configuration > Hryvinskyi Extensions > REST API Logging**.
+
+Nothing is logged until you switch logging on and select endpoints. The Activity Log's **Record Activity** setting must be on as well. When it is off, no call is stored.
 
 ### General Settings
-| Option | Description | Default |
-|--------|-------------|---------|
-| Enable API Logging | Master on/off switch | Disabled |
-| Enabled Endpoints | Select which endpoints to log (grouped selector with search) | All |
-| Enabled Response Codes | Select specific HTTP response codes to log | All |
-| Log Request Headers | Include HTTP request headers in log | Yes |
-| Log Request Body | Include request payload in log | Yes |
-| Log Response Headers | Include HTTP response headers in log | Yes |
-| Log Response Body | Include response payload in log | Yes |
+These settings can be set per store. A call is logged with the settings of the store in its path (`/rest/fr/V1/...` uses store `fr`). A path without a store code uses the store Magento resolves for the request.
 
-### Security & Sanitization
 | Option | Description | Default |
 |--------|-------------|---------|
-| Sanitize Sensitive Data | Automatic secret field detection and hashing | Enabled |
-| Secret Field Names | Comma-separated list of field patterns to treat as secrets | password, token, authorization, api_key, secret, access_token, refresh_token, private_key, client_secret, card_number, cvv, ssn |
+| Enable API Logging | Master switch | No |
+| Enabled Endpoints | The endpoints to log, in a grouped selector with search. A stored selection with no checkbox, such as a `*` pattern or a route of a disabled module, is kept when you save | None |
+| Enabled Response Codes | Log only calls with these response codes. Leave empty for all codes | All |
+| Log Request Headers | Store the request headers | Yes |
+| Log Request Body | Store the request body | Yes |
+| Log Response Headers | Store the response headers | Yes |
+| Log Response Body | Store the response body | Yes |
 
-### Cleanup & Retention
+An async or bulk call (`/async/V1/...`, `/async/bulk/V1/...`) is logged when its synchronous endpoint is selected. Selecting `POST /V1/products` also logs `POST /async/V1/products` and `POST /async/bulk/V1/products/bySku`.
+
+### Retention
 | Option | Description | Default |
 |--------|-------------|---------|
-| Enable Automatic Cleanup | Cron job to delete old logs (daily at 2:00 AM) | Enabled |
-| Retention Period | Days to keep logs before automatic deletion | 30 |
+| Keep REST Calls (days) | Calls older than this are removed from the journal and from this log. `0` keeps them | 30 |
+
+The Activity Log's retention job applies it.
+
+### Replay
+| Option | Description | Default |
+|--------|-------------|---------|
+| Replay Against | Base URL of the store replayed calls are sent to, for example `https://staging.example.com/`. Empty replays against this store | Empty |
+| Token for That Store | Integration or admin token sent with replays to that URL | Empty |
 
 ## Usage
 
-### Dashboard
+### Finding a call
 
-Navigate to **System > Tools > API Logger > Dashboard** to view analytics:
+Open **Activity Log > REST API Logs**. Filter by endpoint, method, response code, exception, IP address or date. The **Request Headers** and **Response Headers** columns are hidden by default. Turn them on from the grid's **Columns** control to filter by a header value, such as an order reference or a trace ID.
 
-- **Summary Cards** — total requests, average duration, error rate, and exception count
-- **Request Volume Chart** — line chart showing daily request count over the selected period
-- **Slowest Endpoints Chart** — horizontal bar chart with the top 10 slowest endpoints by average duration (color-coded: green < 100ms, yellow < 500ms, orange < 1000ms, red >= 1000ms)
-- **Period Selector** — switch between 7, 14, and 30 day views
+Click **View** to open the call's page in the Activity Log.
 
-### Viewing Logs
+### Reading a call
 
-Navigate to **System > Tools > API Logger > Logs**:
+The page has a **Request** tab and a **Response** tab. Each shows the URL, the stored headers and the body.
 
-1. Use grid filters to find specific logs by endpoint, method, response code, IP address, or date range
-2. Enable the **Request Headers** / **Response Headers** columns from the grid's **Columns** control (hidden by default) to filter calls by a header value — useful for finding every call carrying a given order reference, tracking number, or trace ID
-3. Click **View** on any entry to open the detail view
-4. Detail view provides:
-   - Formatted JSON request/response with syntax highlighting and search
-   - Query parameters extracted from endpoint URL
-   - Performance metrics (duration, percentile rank among similar endpoints)
-   - Content-type and body size badges
-   - Related log entries for the same endpoint
+- The body is shown 500 lines at a time. **Load next 500 lines** shows more.
+- The search box looks through the whole body, not only the lines on screen, and reports the number of hits.
+- **Copy** copies the body. **Download body** saves it as a file.
+- Masked values appear as `••••••`.
 
-### Replay Requests
+### Export
 
-From the log detail view, click **Replay** to:
+**Export** saves the call as one of:
 
-1. Re-execute the original API request with the same method, headers, and body
-2. Compare original vs. replayed response status code and duration
-3. Inspect the full replay response body
+- **HAR (.har)**, which browser dev tools can open.
+- **Raw HTTP (.txt)**
+- **cURL command**
 
-### Compare Entries
+The file is sent straight from memory. Nothing is written to `var/`. Its name uses the log entry id, for example `rest-call-42.har`. The URL in the file is built from the store's secure base URL, not from the stored `Host` or `X-Forwarded-*` headers.
 
-From the log detail view, click **Compare** to:
+### Replay
 
-1. Search for related log entries by endpoint pattern
-2. Select an entry for side-by-side comparison
-3. Review differences in status codes, durations, headers, and response bodies
+**Replay** sends the stored request again and shows the status and duration of the original and of the replay, with the replay's response body.
 
-### Export Logs
+- It asks for confirmation first and shows the exact URL it will call. For a write request (POST, PUT, PATCH, DELETE) it warns that data may be created or changed.
+- Without **Replay Against**, the request goes to the secure base URL of the store the call was made to. It is sent as the admin who replays it, with a token issued for that admin, not as the original caller.
+- With **Replay Against**, it goes to that URL with the token from **Token for That Store**.
+- The target comes from configuration and the call's store only. The stored `Host` and `X-Forwarded-*` headers never decide where a replay goes.
+- `Host`, `Cookie`, `Accept-Encoding`, `Content-Length`, `Transfer-Encoding`, `Connection` and `Authorization` are not sent, and neither is any masked header.
+- A call whose URL holds a masked secret cannot be replayed.
+- The **Replay** button is disabled while a replay is running, so it cannot fire twice.
+- A replay sent to this store is a REST call like any other. It is logged as a new call if its endpoint is selected.
 
-From the log detail view, use the export dropdown to download:
+### Compare
 
-- **HAR Format** — standard HTTP Archive format compatible with browser dev tools and analysis tools
-- **Raw HTTP** — plain text RFC 7230 format showing the full request and response
+**Compare** lists other calls to the same endpoint with the same method, including calls with a different query string. Search them by a three-digit status or the start of a correlation ID. Pick one to see a line diff of the two requests and of the two responses. Each body is compared up to 256 KB. When a body was cut and the compared parts match, the dialog says "Identical in the first 256 KB".
 
-### Managing Logs
+### Removing calls
 
-- **Delete Single** — delete button in grid row or detail view
-- **Mass Delete** — select multiple entries in the grid and use the mass delete action
-- **Automatic Cleanup** — configure retention period in settings; cron runs daily at 2:00 AM
+Use **Delete** on a row or the mass action in the list. The call and its activity are removed together, so you need both `Hryvinskyi_ApiLogger::delete` and `Hryvinskyi_ActivityLog::delete`. Without both, the row's **Delete** action is hidden, and the mass action shows an error and removes nothing.
+
+## Secrets
+
+Before a call is stored, secrets are replaced with `••••••`. A name is secret when it contains one of the secret field names. Names are compared in lower case with `-` and spaces read as `_`, so `X-Api-Key` matches `api_key` and `Set-Cookie` matches `cookie`. The list is the Activity Log's **Secret Field Names** setting and applies to every channel. The Activity Log also treats `password`, `token`, `secret`, `authorization`, `cookie`, `api_key`, `apikey` and `private_key` as secret whatever the setting says.
+
+What is masked:
+
+- **Headers.** The value of every secret header, such as `Authorization`, `Cookie`, `Set-Cookie` and `X-Api-Key`.
+- **Bodies.** JSON, XML and form-encoded bodies are masked by field name. Any other text is masked whole when it contains a secret name. A JSON body in which nothing is masked is stored byte for byte.
+- **Query string.** The value of each query key with a secret name, for example `access_token`.
+- **Path.** A path segment whose route parameter is a secret field, such as the reset token in `GET /V1/customers/42/password/resetLinkToken/<token>`, is masked (`.../resetLinkToken/••••••`) in the stored endpoint and in the activity's action. This works when a named pattern selected the call. A call selected only by a `*` pattern keeps its path.
+- **Whole responses.** The response of a token endpoint (a route ending in `/token` or `/tokens`, with or without a trailing `/`) is stored fully masked. So is the response of the two-factor authentication routes that issue an admin token or reveal a TOTP secret (`authenticate`, `authenticate-onetouch`, `verify` and `configure` under `/V1/tfa/provider/<provider>/`).
+- **Error messages.** A secret parameter of a REST error stays a placeholder in the activity's message.
 
 ## ACL Resources
 
 | Resource | Description |
 |----------|-------------|
-| `Hryvinskyi_ApiLogger::api_logger` | Main module access |
-| `Hryvinskyi_ApiLogger::dashboard` | View dashboard |
-| `Hryvinskyi_ApiLogger::logs` | View and manage logs |
-| `Hryvinskyi_ApiLogger::replay` | Replay API requests |
-| `Hryvinskyi_ApiLogger::delete` | Delete log entries |
-| `Hryvinskyi_ApiLogger::config` | Module configuration |
+| `Hryvinskyi_ApiLogger::api_logger` | REST API Logs, under the Activity Log |
+| `Hryvinskyi_ApiLogger::logs` | View logged calls, compare, download and export. The REST panel on the activity page needs it |
+| `Hryvinskyi_ApiLogger::replay` | Replay calls |
+| `Hryvinskyi_ApiLogger::delete` | Delete calls. Also needs `Hryvinskyi_ActivityLog::delete` |
+| `Hryvinskyi_ApiLogger::config_api_logger` | REST API Logging settings |
+
+Opening the call's page also needs `Hryvinskyi_ActivityLog::view`.
+
+## Upgrading from 1.x
+
+Run `bin/magento setup:upgrade`. Install `hryvinskyi/magento2-activity-log` first. The full list is in the [CHANGELOG](CHANGELOG.md). In short:
+
+- Calls are journaled as activities of the `rest` channel. The detail is on the activity page.
+- The "API Logger" menu is gone. The dashboard and the log view are in the Activity Log. The old dashboard and log view URLs redirect there.
+- The cleanup cron job and its settings are replaced by **Keep REST Calls (days)**. The upgrade copies your retention days, or sets `0` if cleanup was off.
+- Secret field names moved to the Activity Log's **Secrets** settings. The upgrade adds your 1.x names to the Activity Log's list and removes the old settings.
+- ACL resources moved under the Activity Log. Check your admin roles.
+- The module no longer replaces `REMOTE_ADDR` with the `CF-Connecting-IP` header. Behind Cloudflare, set the client IP header in Magento's `RemoteAddress` (`alternativeHeaders`).
+- Classes removed: `CleanerInterface`, `Cleaner`, `CleanLogs`, `SanitizerInterface`, `Sanitizer`, `InterceptorInterface`, `Interceptor`, `FakeRequest`, and the `ChartData`, `Stats` and `Related` controllers. `ConfigInterface`, `EndpointUrlResolverInterface` and `Rest\ExtractorInterface` changed.
+
+The upgrade also:
+
+- Adds the calls 1.x stored to the journal. They get the actor "unknown (logged before 2.0)" and keep their original time. Their endpoint keeps the `/rest/...` form it was stored in. The upgrade works in batches of 500 rows.
+- Masks the stored headers and bodies of those calls, using your 1.x secret names and the Activity Log's. 1.x did not mask anything because it read its secret settings from the wrong paths. This runs even when **Record Activity** is off.
+- Masks the paths and query strings of those calls against the selected endpoints. A path secret is masked when a named pattern matches the call.
+- Writes the Activity Log's secret list only when your 1.x names add a name to it. Otherwise that setting is left alone.
+- Deletes the export files 1.x left in `var/`: `api_log_<id>.har` and `api_log_<id>.txt`. They held calls in plain text.
 
 ## Technical Details
 
 ### How It Works
 
-The module uses a Magento plugin on `Magento\Webapi\Controller\Rest::dispatch` to intercept REST API requests and responses. The plugin:
+A plugin on `Magento\Webapi\Controller\Rest::dispatch` records REST calls.
 
-1. Captures request data (endpoint, method, headers, body, IP, user agent) in `beforeDispatch`
-2. Captures response data (status code, headers, body) and measures duration in `afterDispatch`
-3. Matches the endpoint against configured whitelist patterns
-4. Sanitizes sensitive fields if enabled
-5. Persists the log entry to the `hryvinskyi_api_log_entry` database table
+1. Before dispatch, it reads the endpoint, method, headers and body. The endpoint is the path after the REST front name, with the store code and the query string kept: `/V1/products?searchCriteria[pageSize]=5`, `/default/V1/products/x`. A dispatch inside another dispatch is recorded as its own call, with its own response.
+2. After dispatch, it reads the response code, headers and body, and measures the duration.
+3. It checks the call against the enabled endpoints and response codes of the call's store.
+4. It records an activity in the `rest` channel of the Activity Log. The action is the method and the route without the store code, for example `GET /V1/products/x`. An async call has the route of the synchronous call. The message of an error response has its parameters filled in.
+5. It stores the call detail, masked, in `hryvinskyi_api_log_entry`, linked to the activity.
+
+A failure while logging is written to the Magento log and never changes the response of the REST call.
 
 ### Database Table
 
@@ -178,21 +204,33 @@ The module uses a Magento plugin on `Magento\Webapi\Controller\Rest::dispatch` t
 | Column | Type | Description |
 |--------|------|-------------|
 | entity_id | INT (PK) | Auto-increment primary key |
-| endpoint | VARCHAR(512) | API endpoint path |
+| endpoint | VARCHAR(512) | Path after the REST front name, with the store code, cut at 512 characters |
+| query_string | TEXT, nullable | Query string, kept whole |
 | method | VARCHAR(10) | HTTP method |
-| request_headers | MEDIUMTEXT | JSON-encoded request headers |
-| request_body | MEDIUMTEXT | Request payload |
-| response_headers | MEDIUMTEXT | JSON-encoded response headers |
-| response_body | MEDIUMTEXT | Response payload |
+| request_headers | MEDIUMTEXT | JSON-encoded request headers, masked |
+| request_body | MEDIUMTEXT | Request payload, masked |
+| response_headers | MEDIUMTEXT | JSON-encoded response headers, masked |
+| response_body | MEDIUMTEXT | Response payload, masked |
 | response_code | SMALLINT | HTTP response status code |
 | duration | DECIMAL(10,4) | Request duration in milliseconds |
-| is_exception | BOOLEAN | Whether an exception occurred |
-| store_id | INT | Associated store ID |
+| is_exception | BOOLEAN | Whether the response was an error |
+| store_id | INT | Store of the call |
 | ip_address | VARCHAR(45) | Client IP address (IPv4/IPv6) |
 | user_agent | VARCHAR(512) | Client user agent string |
 | created_at | TIMESTAMP | Entry creation timestamp |
+| activity_id | INT | The call's activity. Unique. The row is deleted with the activity |
+| correlation_id | VARCHAR(64) | Correlation ID of the activity |
 
-Indexed columns: `endpoint`, `method`, `response_code`, `is_exception`, `created_at`, `store_id`
+The model's `getEndpoint()` returns the path and the query string joined by `?`. The **Endpoint** column of the REST API Logs grid shows the path only.
+
+Indexed columns: `endpoint`, `method`, `response_code`, `is_exception`, `created_at`, `store_id`, `correlation_id`, and `activity_id` (unique).
+
+## Limitations
+
+- A store whose code is `rest` makes a call stored by 1.x ambiguous: `/rest/V1/x` is read as the front name followed by the route. A store whose code is `async` is read as the async prefix. Avoid these codes.
+- Calls stored by 1.x that could not be journaled, because the activity log was off during the upgrade, are masked but have no activity page. Remove them from the REST API Logs grid.
+- A secret in the path is masked only when a named pattern selected the call.
+- Only REST calls handled by `Magento\Webapi\Controller\Rest` are logged. SOAP and GraphQL calls are not.
 
 ## Author
 

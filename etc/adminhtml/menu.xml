@@ -9,12 +9,8 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
     <menu>
-        <add id="Hryvinskyi_ApiLogger::api_logger"
-             title="API Logger"
-             module="Hryvinskyi_ApiLogger"
-             sortOrder="1000"
-             action="api_logger/log/dashboard"
-             parent="Magento_Backend::system_tools"
-             resource="Hryvinskyi_ApiLogger::api_logger"/>
+        <add id="Hryvinskyi_ApiLogger::rest_logs" title="REST API Logs" translate="title"
+             module="Hryvinskyi_ApiLogger" sortOrder="30" parent="Hryvinskyi_ActivityLog::activity_log"
+             action="api_logger/log/index" resource="Hryvinskyi_ApiLogger::logs"/>
     </menu>
 </config>

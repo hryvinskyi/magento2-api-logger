@@ -18,14 +18,9 @@
                 <log_response_headers>1</log_response_headers>
                 <log_response_body>1</log_response_body>
             </general>
-            <security>
-                <sanitize_secrets>1</sanitize_secrets>
-                <secret_fields>password,token,authorization,api_key,apikey,secret,access_token,refresh_token,private_key,client_secret,card_number,cvv,ssn</secret_fields>
-            </security>
-            <cleanup>
-                <enabled>1</enabled>
-                <retention_days>30</retention_days>
-            </cleanup>
+            <retention>
+                <days>30</days>
+            </retention>
         </api_logger>
     </default>
 </config>

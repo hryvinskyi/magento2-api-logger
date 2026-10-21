@@ -13,6 +13,7 @@ use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Backend\Model\View\Result\Page;
 use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\View\Result\PageFactory;
 
 /**
@@ -34,16 +35,18 @@ class Index extends Action implements HttpGetActionInterface
     }
 
     /**
-     * Execute action
+     * Show the REST log grid
      *
-     * @return Page
+     * @return ResultInterface
      */
-    public function execute(): Page
+    public function execute(): ResultInterface
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Hryvinskyi_ApiLogger::logs');
-        $resultPage->getConfig()->getTitle()->prepend(__('API Logs'));
+        $page = $this->resultPageFactory->create();
+        if ($page instanceof Page) {
+            $page->setActiveMenu('Hryvinskyi_ApiLogger::rest_logs');
+        }
+        $page->getConfig()->getTitle()->prepend((string) __('REST API Logs'));
 
-        return $resultPage;
+        return $page;
     }
 }

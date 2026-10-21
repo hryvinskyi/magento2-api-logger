@@ -12,32 +12,15 @@
     <!-- Preferences -->
     <preference for="Hryvinskyi\ApiLogger\Api\ConfigInterface" type="Hryvinskyi\ApiLogger\Model\Config"/>
     <preference for="Hryvinskyi\ApiLogger\Api\EndpointMatcherInterface" type="Hryvinskyi\ApiLogger\Model\EndpointMatcher"/>
-    <preference for="Hryvinskyi\ApiLogger\Api\SanitizerInterface" type="Hryvinskyi\ApiLogger\Model\Sanitizer"/>
-    <preference for="Hryvinskyi\ApiLogger\Api\InterceptorInterface" type="Hryvinskyi\ApiLogger\Model\Interceptor"/>
-    <preference for="Hryvinskyi\ApiLogger\Api\CleanerInterface" type="Hryvinskyi\ApiLogger\Model\Cleaner"/>
     <preference for="Hryvinskyi\ApiLogger\Api\EndpointUrlResolverInterface" type="Hryvinskyi\ApiLogger\Model\EndpointUrlResolver"/>
     <preference for="Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface" type="Hryvinskyi\ApiLogger\Model\Data\LogEntry"/>
     <preference for="Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface" type="Hryvinskyi\ApiLogger\Model\LogEntryRepository"/>
     <preference for="Hryvinskyi\ApiLogger\Api\Data\LogEntrySearchResultsInterface" type="Hryvinskyi\ApiLogger\Model\LogEntrySearchResults"/>
     <preference for="Hryvinskyi\ApiLogger\Api\Rest\ExtractorInterface" type="Hryvinskyi\ApiLogger\Model\Rest\Extractor"/>
     <preference for="Hryvinskyi\ApiLogger\Api\DateFormatterInterface" type="Hryvinskyi\ApiLogger\Model\DateFormatter"/>
+    <preference for="Hryvinskyi\ApiLogger\Model\Replay\ReplayTransportInterface" type="Hryvinskyi\ApiLogger\Model\Replay\CurlReplayTransport"/>
 
     <type name="Hryvinskyi\ApiLogger\Model\Config">
-        <arguments>
-            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
-        </arguments>
-    </type>
-    <type name="Hryvinskyi\ApiLogger\Model\EndpointUrlResolver">
-        <arguments>
-            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
-        </arguments>
-    </type>
-    <type name="Hryvinskyi\ApiLogger\Model\EndpointMatcher">
-        <arguments>
-            <argument name="request" xsi:type="object">Hryvinskyi\ApiLogger\Model\Rest\FakeRequest</argument>
-        </arguments>
-    </type>
-    <type name="Hryvinskyi\ApiLogger\Model\Interceptor">
         <arguments>
             <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
         </arguments>
@@ -48,6 +31,70 @@
         </arguments>
     </type>
     <type name="Hryvinskyi\ApiLogger\Model\Rest\Extractor">
+        <arguments>
+            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
+        </arguments>
+    </type>
+
+    <type name="Hryvinskyi\ApiLogger\Model\Http\Masker">
+        <arguments>
+            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
+        </arguments>
+    </type>
+
+    <!-- Routes whose whole response is a secret, matched against the route without store code, query or trailing slash -->
+    <type name="Hryvinskyi\ApiLogger\Model\Recording\SecretResponsePolicy">
+        <arguments>
+            <argument name="routePatterns" xsi:type="array">
+                <!-- Answer with an access token -->
+                <item name="token" xsi:type="string">#/tokens?$#i</item>
+                <!-- Second factor: answer with an admin access token -->
+                <item name="second_factor_authenticate" xsi:type="string">#^/V\d+/tfa/provider/[^/]+/authenticate$#</item>
+                <item name="second_factor_authenticate_onetouch" xsi:type="string">#^/V\d+/tfa/provider/[^/]+/authenticate-onetouch$#</item>
+                <item name="second_factor_verify" xsi:type="string">#^/V\d+/tfa/provider/[^/]+/verify$#</item>
+                <!-- Second factor: answer with the shared secret a device is set up with -->
+                <item name="second_factor_configure" xsi:type="string">#^/V\d+/tfa/provider/[^/]+/configure$#</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- The REST channel of the activity log -->
+    <virtualType name="Hryvinskyi\ApiLogger\Model\Channel\RestChannel" type="Hryvinskyi\ActivityLog\Model\Channel\Channel">
+        <arguments>
+            <argument name="code" xsi:type="const">Hryvinskyi\ApiLogger\Model\Recording\RestCallRecorder::CHANNEL</argument>
+            <argument name="label" xsi:type="string">REST API</argument>
+            <argument name="chartColor" xsi:type="string">#4477AA</argument>
+            <argument name="badgeBackground" xsi:type="string">#DEE8F3</argument>
+            <argument name="badgeForeground" xsi:type="string">#2B5680</argument>
+            <argument name="retentionConfigPath" xsi:type="const">Hryvinskyi\ApiLogger\Api\ConfigInterface::XML_PATH_RETENTION_DAYS</argument>
+        </arguments>
+    </virtualType>
+    <type name="Hryvinskyi\ActivityLog\Model\Channel\ChannelPool">
+        <arguments>
+            <argument name="channels" xsi:type="array">
+                <item name="rest" xsi:type="object" sortOrder="10">Hryvinskyi\ApiLogger\Model\Channel\RestChannel</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Hryvinskyi\ActivityLog\Model\Dashboard\WidgetPool">
+        <arguments>
+            <argument name="widgets" xsi:type="array">
+                <item name="rest_response_codes" xsi:type="object" sortOrder="40">Hryvinskyi\ApiLogger\Model\Dashboard\ResponseCodesWidget</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Hryvinskyi\ApiLogger\Model\Export\ExporterPool">
+        <arguments>
+            <argument name="exporters" xsi:type="array">
+                <item name="har" xsi:type="object" sortOrder="10">Hryvinskyi\ApiLogger\Model\Export\HarExporter</item>
+                <item name="http" xsi:type="object" sortOrder="20">Hryvinskyi\ApiLogger\Model\Export\RawHttpExporter</item>
+                <item name="curl" xsi:type="object" sortOrder="30">Hryvinskyi\ApiLogger\Model\Export\CurlExporter</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Hryvinskyi\ApiLogger\Model\Export\HarExporter">
         <arguments>
             <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\Json</argument>
         </arguments>

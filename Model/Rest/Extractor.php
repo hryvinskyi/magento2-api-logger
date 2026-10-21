@@ -10,186 +10,218 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Model\Rest;
 
 use Hryvinskyi\ApiLogger\Api\Rest\ExtractorInterface;
-use Magento\Framework\App\HttpRequestInterface as RequestInterface;
-use Magento\Framework\App\ResponseInterface;
+use Laminas\Http\Headers;
+use Magento\Framework\App\Area;
+use Magento\Framework\App\AreaList;
+use Magento\Framework\App\Request\Http as HttpRequest;
 use Magento\Framework\App\State;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Framework\Webapi\ErrorProcessor;
-use Magento\Framework\Webapi\Exception;
+use Magento\Framework\Webapi\Exception as WebapiException;
+use Magento\Framework\Webapi\Rest\Response as RestResponse;
 
 /**
- * REST Extractor Service
+ * Reads a REST call from Magento's request and response
  *
- * Extracts data from Magento REST API request and response objects
+ * The endpoint is the path after the REST front name Magento is configured with: the request handed to the REST front
+ * controller still carries it. A failed call has no body or status yet when the action returns: they are written when
+ * the response is sent. The error is turned here into the body and status the client receives, the way the response
+ * will render it.
  */
 class Extractor implements ExtractorInterface
 {
+    /**
+     * @param State $appState
+     * @param ErrorProcessor $errorProcessor
+     * @param SerializerInterface $serializer
+     * @param AreaList $areaList
+     */
     public function __construct(
         private readonly State $appState,
         private readonly ErrorProcessor $errorProcessor,
-        private readonly SerializerInterface $serializer
+        private readonly SerializerInterface $serializer,
+        private readonly AreaList $areaList
     ) {
     }
 
     /**
      * @inheritDoc
      */
-    public function extractEndpoint(RequestInterface $request): string
+    public function extractEndpoint(HttpRequest $request): string
     {
-        return $request->getPathInfo();
+        $query = (string) $request->getUri()->getQuery();
+
+        return $this->withoutFrontName((string) $request->getPathInfo()) . ($query !== '' ? '?' . $query : '');
     }
 
     /**
      * @inheritDoc
      */
-    public function extractMethod(RequestInterface $request): string
+    public function extractMethod(HttpRequest $request): string
     {
-        return $request->getMethod();
+        return strtoupper((string) $request->getMethod());
     }
 
     /**
      * @inheritDoc
      */
-    public function extractRequestHeaders(RequestInterface $request): array
+    public function extractRequestHeaders(HttpRequest $request): array
     {
-        $headers = [];
+        $headers = $request->getHeaders();
 
-        if (!method_exists($request, 'getHeaders')) {
-            return $headers;
-        }
-
-        $headersObject = $request->getHeaders();
-
-        if (!$headersObject) {
-            return $headers;
-        }
-
-        // Try to convert headers object to array
-        if (method_exists($headersObject, 'toArray')) {
-            return $headersObject->toArray();
-        }
-
-        // Fallback to string parsing if toArray is not available
-        if (method_exists($headersObject, 'toString')) {
-            $headersString = $headersObject->toString();
-            $lines = explode("\r\n", $headersString);
-
-            foreach ($lines as $line) {
-                if (strpos($line, ':') === false) {
-                    continue;
-                }
-
-                [$key, $value] = explode(':', $line, 2);
-                $headers[trim($key)] = trim($value);
-            }
-
-            return $headers;
-        }
-
-        return ['_raw' => 'Unable to extract headers'];
+        return $headers instanceof Headers ? $this->headers($headers) : [];
     }
 
     /**
      * @inheritDoc
      */
-    public function extractRequestBody(RequestInterface $request): ?string
+    public function extractRequestBody(HttpRequest $request): ?string
     {
         $content = $request->getContent();
 
-        return $content !== false ? $content : null;
+        return $content !== '' ? $content : null;
     }
 
     /**
      * @inheritDoc
      */
-    public function extractResponseCode(ResponseInterface $response): int
+    public function extractResponseCode(RestResponse $response): int
     {
-        return (int)$response->getHttpResponseCode();
+        $exception = $this->firstException($response);
+
+        return $exception !== null
+            ? (int) $this->errorProcessor->maskException($exception)->getHttpCode()
+            : (int) $response->getHttpResponseCode();
     }
 
     /**
      * @inheritDoc
      */
-    public function extractResponseHeaders(ResponseInterface $response): array
+    public function extractResponseHeaders(RestResponse $response): array
     {
-        $headers = [];
-
-        if (!method_exists($response, 'getHeaders')) {
-            return $headers;
-        }
-
-        $headersObject = $response->getHeaders();
-
-        if (!$headersObject) {
-            return $headers;
-        }
-
-        // Try to convert headers object to array
-        if (method_exists($headersObject, 'toArray')) {
-            return $headersObject->toArray();
-        }
-
-        return $headers;
+        return $this->headers($response->getHeaders());
     }
 
     /**
      * @inheritDoc
      */
-    public function extractResponseBody(ResponseInterface $response): ?string
+    public function extractResponseBody(RestResponse $response): ?string
     {
+        $exception = $this->firstException($response);
+        if ($exception !== null) {
+            return $this->errorBody($exception);
+        }
+
         $body = $response->getBody();
 
-        return $body !== null && $body !== false ? (string)$body : null;
+        return $body !== '' ? $body : null;
     }
 
     /**
      * @inheritDoc
      */
-    public function extractExceptionBody(ResponseInterface $response): ?string
+    public function isException(RestResponse $response): bool
+    {
+        return (bool) $response->isException();
+    }
+
+    /**
+     * The path without its leading REST front name; unchanged when the front name is unknown or not the first segment
+     *
+     * @param string $path
+     * @return string
+     */
+    private function withoutFrontName(string $path): string
+    {
+        $frontName = (string) $this->areaList->getFrontName(Area::AREA_WEBAPI_REST);
+        if ($frontName === '') {
+            return $path;
+        }
+
+        $stripped = (string) preg_replace('#^/' . preg_quote($frontName, '#') . '(?=/|$)#', '', $path, 1);
+
+        return $stripped !== '' ? $stripped : '/';
+    }
+
+    /**
+     * The first error registered with the response, or null
+     *
+     * @param RestResponse $response
+     * @return \Exception|null
+     */
+    private function firstException(RestResponse $response): ?\Exception
     {
         foreach ($response->getException() as $exception) {
-            $maskedException = $this->errorProcessor->maskException($exception);
-            $messageData = ['message' => $maskedException->getMessage()];
-
-            if ($maskedException->getErrors()) {
-                $messageData['errors'] = [];
-
-                foreach ($maskedException->getErrors() as $errorMessage) {
-                    $errorData['message'] = $errorMessage->getRawMessage();
-                    $errorData['parameters'] = $errorMessage->getParameters();
-                    $messageData['errors'][] = $errorData;
-                }
+            if ($exception instanceof \Exception) {
+                return $exception;
             }
-
-            if ($maskedException->getCode()) {
-                $messageData['code'] = $maskedException->getCode();
-            }
-
-            if ($maskedException->getDetails()) {
-                $messageData['parameters'] = $maskedException->getDetails();
-            }
-
-            if ($this->appState->getMode() == State::MODE_DEVELOPER) {
-                $messageData['trace'] = $exception instanceof Exception
-                    ? $exception->getStackTrace()
-                    : $exception->getTraceAsString();
-            }
-
-            return $this->serializer->serialize($messageData);
         }
 
         return null;
     }
 
     /**
-     * @inheritDoc
+     * The error as the client receives it
+     *
+     * @param \Exception $exception
+     * @return string
      */
-    public function isException(ResponseInterface $response): bool
+    private function errorBody(\Exception $exception): string
     {
-        if (!method_exists($response, 'isException')) {
-            return false;
+        $masked = $this->errorProcessor->maskException($exception);
+        $message = ['message' => $masked->getMessage()];
+
+        $errors = [];
+        foreach ($masked->getErrors() ?? [] as $error) {
+            $errors[] = ['message' => $error->getRawMessage(), 'parameters' => $error->getParameters()];
+        }
+        if ($errors !== []) {
+            $message['errors'] = $errors;
         }
 
-        return (bool)$response->isException();
+        if ($masked->getCode()) {
+            $message['code'] = $masked->getCode();
+        }
+
+        if ($masked->getDetails()) {
+            $message['parameters'] = $masked->getDetails();
+        }
+
+        if ($this->appState->getMode() === State::MODE_DEVELOPER) {
+            $message['trace'] = $exception instanceof WebapiException
+                ? $exception->getStackTrace()
+                : $exception->getTraceAsString();
+        }
+
+        return (string) $this->serializer->serialize($message);
+    }
+
+    /**
+     * Headers by name; a header sent more than once has a list of values
+     *
+     * @param Headers $headers
+     * @return array<string, string|list<string>>
+     */
+    private function headers(Headers $headers): array
+    {
+        $result = [];
+        foreach ($headers->toArray() as $name => $value) {
+            $result[(string) $name] = is_array($value)
+                ? array_values(array_map([$this, 'text'], $value))
+                : $this->text($value);
+        }
+
+        return $result;
+    }
+
+    /**
+     * A header value as text
+     *
+     * @param mixed $value
+     * @return string
+     */
+    private function text(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
     }
 }

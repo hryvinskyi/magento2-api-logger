@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2025. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+-->
+<!-- Entries of this module in the Activity Log menu -->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="hryvinskyi.activity.log.menu">
+            <arguments>
+                <argument name="items" xsi:type="array">
+                    <item name="rest_logs" xsi:type="array">
+                        <item name="label" xsi:type="string" translate="true">REST API Logs</item>
+                        <item name="route" xsi:type="string">api_logger/log/index</item>
+                        <item name="resource" xsi:type="string">Hryvinskyi_ApiLogger::logs</item>
+                        <item name="sort_order" xsi:type="number">20</item>
+                        <item name="icon" xsi:type="string"><![CDATA[<svg class="menu-item-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>]]></item>
+                    </item>
+                    <item name="rest_settings" xsi:type="array">
+                        <item name="label" xsi:type="string" translate="true">REST Logging Settings</item>
+                        <item name="route" xsi:type="string">adminhtml/system_config/edit</item>
+                        <item name="route_params" xsi:type="array">
+                            <item name="section" xsi:type="string">api_logger</item>
+                        </item>
+                        <item name="resource" xsi:type="string">Hryvinskyi_ApiLogger::config_api_logger</item>
+                        <item name="sort_order" xsi:type="number">110</item>
+                        <item name="icon" xsi:type="string"><![CDATA[<svg class="menu-item-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>]]></item>
+                    </item>
+                </argument>
+            </arguments>
+        </referenceBlock>
+    </body>
+</page>

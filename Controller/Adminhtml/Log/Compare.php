@@ -9,177 +9,63 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Controller\Adminhtml\Log;
 
-use Hryvinskyi\ApiLogger\Api\DateFormatterInterface;
 use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
-use Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry\CollectionFactory;
+use Hryvinskyi\ApiLogger\Model\Compare\ComparisonView;
+use Hryvinskyi\ApiLogger\Model\Http\RequestParams;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
-use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 /**
- * Search and compare log entries side-by-side
+ * Lists the calls to the same endpoint a call can be compared with; with "other", answers with both calls
  */
-class Compare extends Action implements HttpGetActionInterface, HttpPostActionInterface
+class Compare extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'Hryvinskyi_ApiLogger::logs';
 
     /**
      * @param Context $context
+     * @param RequestParams $params
      * @param LogEntryRepositoryInterface $logEntryRepository
-     * @param CollectionFactory $collectionFactory
-     * @param JsonFactory $jsonFactory
-     * @param DateFormatterInterface $dateFormatter
+     * @param ComparisonView $comparisonView
      */
     public function __construct(
         Context $context,
+        private readonly RequestParams $params,
         private readonly LogEntryRepositoryInterface $logEntryRepository,
-        private readonly CollectionFactory $collectionFactory,
-        private readonly JsonFactory $jsonFactory,
-        private readonly DateFormatterInterface $dateFormatter
+        private readonly ComparisonView $comparisonView
     ) {
         parent::__construct($context);
     }
 
     /**
-     * @inheritDoc
+     * Answer with the candidates or the pair
+     *
+     * @return ResultInterface
      */
     public function execute(): ResultInterface
     {
-        $result = $this->jsonFactory->create();
-        $id = (int)$this->getRequest()->getParam('id');
-        $otherId = (int)$this->getRequest()->getParam('other_id');
-        $query = (string)$this->getRequest()->getParam('q', '');
-
-        if ($otherId && $id) {
-            return $this->compareMode($result, $id, $otherId);
+        $result = $this->resultFactory->create(ResultFactory::TYPE_JSON);
+        if (!$result instanceof Json) {
+            return $result;
         }
 
-        return $this->searchMode($result, $id, $query);
-    }
-
-    /**
-     * Search mode: return matching entries
-     *
-     * @param \Magento\Framework\Controller\Result\Json $result
-     * @param int $currentId
-     * @param string $query
-     * @return ResultInterface
-     */
-    private function searchMode($result, int $currentId, string $query): ResultInterface
-    {
-        $collection = $this->collectionFactory->create();
-        $collection->addFieldToFilter('entity_id', ['neq' => $currentId]);
-
-        if ($query !== '') {
-            if (is_numeric($query)) {
-                $collection->addFieldToFilter(
-                    ['entity_id', 'endpoint', 'method'],
-                    [
-                        ['eq' => (int)$query],
-                        ['like' => '%' . $query . '%'],
-                        ['like' => '%' . $query . '%'],
-                    ]
-                );
-            } else {
-                $collection->addFieldToFilter(
-                    ['endpoint', 'method'],
-                    [
-                        ['like' => '%' . $query . '%'],
-                        ['like' => '%' . $query . '%'],
-                    ]
-                );
-            }
-        }
-
-        $collection->setOrder('created_at', 'DESC');
-        $collection->setPageSize(20);
-
-        $items = [];
-        foreach ($collection as $item) {
-            $responseCode = $item->getData('response_code');
-            $items[] = [
-                'entity_id' => $item->getData('entity_id'),
-                'method' => $item->getData('method'),
-                'endpoint' => $item->getData('endpoint'),
-                'response_code' => $responseCode,
-                'created_at' => $this->dateFormatter->formatDateTime($item->getData('created_at')),
-                'badge_class' => $this->getBadgeClass($responseCode ? (int)$responseCode : null),
-            ];
-        }
-
-        return $result->setData(['items' => $items]);
-    }
-
-    /**
-     * Compare mode: return both entries' full data
-     *
-     * @param \Magento\Framework\Controller\Result\Json $result
-     * @param int $currentId
-     * @param int $otherId
-     * @return ResultInterface
-     */
-    private function compareMode($result, int $currentId, int $otherId): ResultInterface
-    {
         try {
-            $current = $this->logEntryRepository->getById($currentId);
-            $other = $this->logEntryRepository->getById($otherId);
-        } catch (NoSuchEntityException $e) {
-            return $result->setData(['error' => true, 'message' => 'Entry not found.']);
-        }
+            $entry = $this->logEntryRepository->getById($this->params->int('id'));
+            $otherId = $this->params->int('other');
 
-        return $result->setData([
-            'current' => $this->entryToArray($current),
-            'other' => $this->entryToArray($other),
-        ]);
-    }
-
-    /**
-     * Convert log entry to array for JSON response
-     *
-     * @param \Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface $entry
-     * @return array<string, mixed>
-     */
-    private function entryToArray($entry): array
-    {
-        return [
-            'entity_id' => $entry->getEntityId(),
-            'method' => $entry->getMethod(),
-            'endpoint' => $entry->getEndpoint(),
-            'response_code' => $entry->getResponseCode(),
-            'duration' => $entry->getDuration(),
-            'request_headers' => $entry->getRequestHeaders(),
-            'request_body' => $entry->getRequestBody(),
-            'response_headers' => $entry->getResponseHeaders(),
-            'response_body' => $entry->getResponseBody(),
-            'created_at' => $this->dateFormatter->formatDateTime($entry->getCreatedAt()),
-        ];
-    }
-
-    /**
-     * Get CSS class for status badge
-     *
-     * @param int|null $code
-     * @return string
-     */
-    private function getBadgeClass(?int $code): string
-    {
-        if ($code === null) {
-            return 'warning';
+            return $result->setData($otherId > 0
+                ? $this->comparisonView->pair($entry, $this->logEntryRepository->getById($otherId))
+                : ['candidates' => $this->comparisonView->candidates(
+                    $entry,
+                    $this->params->text('q')
+                )]);
+        } catch (NoSuchEntityException) {
+            return $result->setData(['error' => (string) __('The call is no longer logged.')]);
         }
-        if ($code >= 200 && $code < 300) {
-            return 'success';
-        }
-        if ($code >= 300 && $code < 400) {
-            return 'info';
-        }
-        if ($code >= 400 && $code < 500) {
-            return 'warning';
-        }
-
-        return 'error';
     }
 }

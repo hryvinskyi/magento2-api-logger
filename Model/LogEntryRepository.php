@@ -14,6 +14,7 @@ use Hryvinskyi\ApiLogger\Api\Data\LogEntryInterfaceFactory;
 use Hryvinskyi\ApiLogger\Api\Data\LogEntrySearchResultsInterface;
 use Hryvinskyi\ApiLogger\Api\Data\LogEntrySearchResultsInterfaceFactory;
 use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
+use Hryvinskyi\ApiLogger\Model\Data\LogEntry;
 use Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry as LogEntryResource;
 use Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry\CollectionFactory;
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
@@ -23,7 +24,7 @@ use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 /**
- * Log Entry Repository
+ * Stores and finds logged REST calls in their table
  */
 class LogEntryRepository implements LogEntryRepositoryInterface
 {
@@ -49,10 +50,10 @@ class LogEntryRepository implements LogEntryRepositoryInterface
     public function save(LogEntryInterface $logEntry): LogEntryInterface
     {
         try {
-            $this->resource->save($logEntry);
+            $this->resource->save($this->model($logEntry));
         } catch (\Exception $exception) {
             throw new CouldNotSaveException(
-                __('Could not save the log entry: %1', $exception->getMessage()),
+                __('The log entry could not be saved.'),
                 $exception
             );
         }
@@ -65,14 +66,15 @@ class LogEntryRepository implements LogEntryRepositoryInterface
      */
     public function getById(int $entityId): LogEntryInterface
     {
-        $logEntry = $this->logEntryFactory->create();
-        $this->resource->load($logEntry, $entityId);
+        return $this->load($entityId, LogEntryInterface::ENTITY_ID);
+    }
 
-        if (!$logEntry->getEntityId()) {
-            throw new NoSuchEntityException(__('Log entry with id "%1" does not exist.', $entityId));
-        }
-
-        return $logEntry;
+    /**
+     * @inheritDoc
+     */
+    public function getByActivityId(int $activityId): LogEntryInterface
+    {
+        return $this->load($activityId, LogEntryInterface::ACTIVITY_ID);
     }
 
     /**
@@ -81,12 +83,18 @@ class LogEntryRepository implements LogEntryRepositoryInterface
     public function getList(SearchCriteriaInterface $searchCriteria): LogEntrySearchResultsInterface
     {
         $collection = $this->collectionFactory->create();
-
         $this->collectionProcessor->process($searchCriteria, $collection);
+
+        $items = [];
+        foreach ($collection->getItems() as $item) {
+            if ($item instanceof LogEntryInterface) {
+                $items[] = $item;
+            }
+        }
 
         $searchResults = $this->searchResultsFactory->create();
         $searchResults->setSearchCriteria($searchCriteria);
-        $searchResults->setItems($collection->getItems());
+        $searchResults->setItems($items);
         $searchResults->setTotalCount($collection->getSize());
 
         return $searchResults;
@@ -98,10 +106,10 @@ class LogEntryRepository implements LogEntryRepositoryInterface
     public function delete(LogEntryInterface $logEntry): bool
     {
         try {
-            $this->resource->delete($logEntry);
+            $this->resource->delete($this->model($logEntry));
         } catch (\Exception $exception) {
             throw new CouldNotDeleteException(
-                __('Could not delete the log entry: %1', $exception->getMessage()),
+                __('The log entry could not be deleted.'),
                 $exception
             );
         }
@@ -115,5 +123,41 @@ class LogEntryRepository implements LogEntryRepositoryInterface
     public function deleteById(int $entityId): bool
     {
         return $this->delete($this->getById($entityId));
+    }
+
+    /**
+     * Load the entry with the value in a unique field
+     *
+     * @param int $value
+     * @param string $field
+     * @return LogEntryInterface
+     * @throws NoSuchEntityException
+     */
+    private function load(int $value, string $field): LogEntryInterface
+    {
+        $logEntry = $this->model($this->logEntryFactory->create());
+        $this->resource->load($logEntry, $value, $field);
+
+        if (!$logEntry->getId()) {
+            throw new NoSuchEntityException(__('Log entry with %1 "%2" does not exist.', $field, $value));
+        }
+
+        return $logEntry;
+    }
+
+    /**
+     * The stored model behind an entry
+     *
+     * @param LogEntryInterface $logEntry
+     * @return LogEntry
+     * @throws \InvalidArgumentException When the entry is not one this repository stores
+     */
+    private function model(LogEntryInterface $logEntry): LogEntry
+    {
+        if (!$logEntry instanceof LogEntry) {
+            throw new \InvalidArgumentException(sprintf('%s cannot be stored here.', $logEntry::class));
+        }
+
+        return $logEntry;
     }
 }

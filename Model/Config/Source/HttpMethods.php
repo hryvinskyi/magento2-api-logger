@@ -17,7 +17,9 @@ use Magento\Framework\Data\OptionSourceInterface;
 class HttpMethods implements OptionSourceInterface
 {
     /**
-     * @inheritDoc
+     * HTTP methods a call can be made with
+     *
+     * @return list<array{value: string, label: \Magento\Framework\Phrase}>
      */
     public function toOptionArray(): array
     {

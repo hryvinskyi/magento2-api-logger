@@ -9,77 +9,95 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Model;
 
+use Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface;
 use Hryvinskyi\ApiLogger\Api\EndpointUrlResolverInterface;
-use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Framework\App\Area;
+use Magento\Framework\App\AreaList;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Url\ScopeInterface as UrlScopeInterface;
+use Magento\Framework\UrlInterface;
+use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 /**
- * Resolves relative API endpoint paths to full absolute URLs
+ * Rebuilds the URL of a logged call
+ *
+ * The logged path is what follows the REST front name, so the front name Magento is configured with is put back
+ * between the base URL and the path. A path that already starts with it (stored before 2.0) is left as it is, and
+ * when no front name is configured the path is appended as stored.
+ *
+ * The base is the one asked for, else the secure base URL of the store the call was made to, or of the default store
+ * view when the call has no store or its store is gone. Nothing stored with the call decides where it points: the
+ * stored headers (Host, X-Forwarded-Proto) came from whoever sent the call and are never trusted as a destination.
  */
 class EndpointUrlResolver implements EndpointUrlResolverInterface
 {
     /**
-     * @param SerializerInterface $serializer
      * @param StoreManagerInterface $storeManager
+     * @param AreaList $areaList
      */
     public function __construct(
-        private readonly SerializerInterface $serializer,
-        private readonly StoreManagerInterface $storeManager
+        private readonly StoreManagerInterface $storeManager,
+        private readonly AreaList $areaList
     ) {
     }
 
     /**
      * @inheritDoc
      */
-    public function resolve(string $endpoint, ?string $requestHeadersJson, ?int $storeId): string
+    public function resolve(LogEntryInterface $entry, ?string $baseUrl = null): string
     {
-        if (str_starts_with($endpoint, 'http://') || str_starts_with($endpoint, 'https://')) {
-            return $endpoint;
-        }
-
-        $host = $this->extractHeaderValue($requestHeadersJson, 'host');
-
-        if ($host !== '') {
-            $proto = $this->extractHeaderValue($requestHeadersJson, 'x-forwarded-proto');
-            $scheme = (strtolower($proto) === 'http') ? 'http' : 'https';
-
-            return $scheme . '://' . $host . '/' . ltrim($endpoint, '/');
-        }
-
-        try {
-            $baseUrl = rtrim($this->storeManager->getStore($storeId)->getBaseUrl(), '/');
-
-            return $baseUrl . '/' . ltrim($endpoint, '/');
-        } catch (\Exception $e) {
-            return $endpoint;
-        }
+        return rtrim($baseUrl ?? $this->baseUrl($entry->getStoreId()), '/') . $this->path($entry->getEndpoint());
     }
 
     /**
-     * Extract a header value from request headers JSON by name (case-insensitive)
+     * The logged path behind the REST front name
      *
-     * @param string|null $headersJson
-     * @param string $headerName
+     * @param string $endpoint
      * @return string
      */
-    private function extractHeaderValue(?string $headersJson, string $headerName): string
+    private function path(string $endpoint): string
     {
-        if (empty($headersJson)) {
-            return '';
+        $path = '/' . ltrim($endpoint, '/');
+        $frontName = (string) $this->areaList->getFrontName(Area::AREA_WEBAPI_REST);
+        if ($frontName === '' || str_starts_with($path, '/' . $frontName . '/')) {
+            return $path;
+        }
+
+        return '/' . $frontName . $path;
+    }
+
+    /**
+     * The secure base web URL of the call's store, or an empty string when no store has one
+     *
+     * @param int|null $storeId
+     * @return string
+     */
+    private function baseUrl(?int $storeId): string
+    {
+        $store = $this->store($storeId);
+
+        return $store instanceof UrlScopeInterface
+            ? (string) $store->getBaseUrl(UrlInterface::URL_TYPE_WEB, true)
+            : '';
+    }
+
+    /**
+     * The store of the call, or the default store view when it has none or it no longer exists
+     *
+     * @param int|null $storeId
+     * @return StoreInterface|null
+     */
+    private function store(?int $storeId): ?StoreInterface
+    {
+        if ($storeId === null) {
+            return $this->storeManager->getDefaultStoreView();
         }
 
         try {
-            $headers = $this->serializer->unserialize($headersJson);
-        } catch (\Exception $e) {
-            return '';
+            return $this->storeManager->getStore($storeId);
+        } catch (NoSuchEntityException) {
+            return $this->storeManager->getDefaultStoreView();
         }
-
-        foreach ($headers as $key => $value) {
-            if (strtolower((string)$key) === $headerName) {
-                return is_array($value) ? (string)reset($value) : (string)$value;
-            }
-        }
-
-        return '';
     }
 }

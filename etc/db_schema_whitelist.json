@@ -1,0 +1,37 @@
+{
+    "hryvinskyi_api_log_entry": {
+        "column": {
+            "entity_id": true,
+            "endpoint": true,
+            "query_string": true,
+            "method": true,
+            "request_headers": true,
+            "request_body": true,
+            "response_headers": true,
+            "response_body": true,
+            "response_code": true,
+            "duration": true,
+            "is_exception": true,
+            "store_id": true,
+            "ip_address": true,
+            "user_agent": true,
+            "created_at": true,
+            "activity_id": true,
+            "correlation_id": true
+        },
+        "index": {
+            "HRYVINSKYI_API_LOG_ENTRY_ENDPOINT": true,
+            "HRYVINSKYI_API_LOG_ENTRY_METHOD": true,
+            "HRYVINSKYI_API_LOG_ENTRY_RESPONSE_CODE": true,
+            "HRYVINSKYI_API_LOG_ENTRY_IS_EXCEPTION": true,
+            "HRYVINSKYI_API_LOG_ENTRY_CREATED_AT": true,
+            "HRYVINSKYI_API_LOG_ENTRY_STORE_ID": true,
+            "HRYVINSKYI_API_LOG_ENTRY_CORRELATION_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "HRYVINSKYI_API_LOG_ENTRY_ACTIVITY_ID": true,
+            "FK_F4B8EACAA9C1DB9DAFAC91D2995FDBF4": true
+        }
+    }
+}

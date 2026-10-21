@@ -10,20 +10,21 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Model;
 
 use Hryvinskyi\ApiLogger\Api\EndpointMatcherInterface;
-use Magento\Framework\App\RequestInterface;
-use Magento\Webapi\Controller\PathProcessor;
-use Magento\Webapi\Controller\Rest\Router\Route;
+use Hryvinskyi\ApiLogger\Model\Recording\RoutePath;
 
 /**
- * Endpoint Pattern Matcher
+ * Matches a called path against a "METHOD|/V1/route" pattern, the way Web API routes are written
  *
- * Matches API endpoints against patterns using Magento's route matching logic
+ * The store code the call was made with is ignored. A segment ":name" matches any one segment; a last segment "*"
+ * matches the rest of the path. The method compares without case.
  */
 class EndpointMatcher implements EndpointMatcherInterface
 {
+    /**
+     * @param RoutePath $routePath
+     */
     public function __construct(
-        private readonly PathProcessor $pathProcessor,
-        private readonly RequestInterface $request
+        private readonly RoutePath $routePath
     ) {
     }
 
@@ -32,79 +33,52 @@ class EndpointMatcher implements EndpointMatcherInterface
      */
     public function matches(string $endpoint, string $method, string $pattern): bool
     {
-        [$patternMethod, $patternEndpoint] = $this->parsePattern($pattern);
-
-        if (!$this->methodMatches($method, $patternMethod)) {
+        if (!str_contains($pattern, self::SEPARATOR)) {
             return false;
         }
 
-        $processedPath = $this->pathProcessor->process($endpoint);
-
-        return $this->pathMatches($processedPath, $patternEndpoint);
-    }
-
-    /**
-     * Parse pattern into method and endpoint components
-     *
-     * Expected format: "METHOD|/endpoint/path"
-     * Example: "GET|/V1/products/:id"
-     *
-     * @param string $pattern The pattern to parse
-     * @return array{0: string, 1: string} Array containing [method, endpoint]
-     */
-    private function parsePattern(string $pattern): array
-    {
-        return explode('|', $pattern, 2);
-    }
-
-    /**
-     * Check if HTTP method matches the pattern method (case-insensitive)
-     *
-     * @param string $method The HTTP method to check
-     * @param string $patternMethod The pattern method to match against
-     * @return bool True if methods match (case-insensitive), false otherwise
-     */
-    private function methodMatches(string $method, string $patternMethod): bool
-    {
-        return mb_strtolower($method) === mb_strtolower($patternMethod);
-    }
-
-    /**
-     * Check if processed path matches the pattern endpoint
-     *
-     * First attempts exact match, then falls back to route pattern matching
-     * using Magento's route matching logic for wildcards and parameters.
-     *
-     * @param string $processedPath The processed endpoint path
-     * @param string $patternEndpoint The pattern endpoint to match against
-     * @return bool True if path matches pattern, false otherwise
-     */
-    private function pathMatches(string $processedPath, string $patternEndpoint): bool
-    {
-        // Check for exact match first (optimization)
-        if ($processedPath === $patternEndpoint) {
-            return true;
+        [$patternMethod, $patternPath] = explode(self::SEPARATOR, $pattern, 2);
+        if (strcasecmp(trim($patternMethod), $method) !== 0) {
+            return false;
         }
 
-        // Fall back to Magento route pattern matching for wildcards/parameters
-        return $this->routeMatches($processedPath, $patternEndpoint);
+        return $this->pathMatches(
+            $this->segments($this->routePath->route($endpoint)),
+            $this->segments($patternPath)
+        );
     }
 
     /**
-     * Use Magento's route matching logic to check pattern match
+     * Whether the called segments fit the pattern's segments
      *
-     * Supports patterns like:
-     * - /V1/products/:id (parameter placeholder)
-     *
-     * @param string $processedPath The processed endpoint path
-     * @param string $patternEndpoint The pattern endpoint with placeholders
-     * @return bool True if route matches pattern, false otherwise
+     * @param list<string> $path
+     * @param list<string> $pattern
+     * @return bool
      */
-    private function routeMatches(string $processedPath, string $patternEndpoint): bool
+    private function pathMatches(array $path, array $pattern): bool
     {
-        $route = new Route($patternEndpoint);
-        $this->request->setPathInfo($processedPath);
+        foreach ($pattern as $index => $part) {
+            if ($part === self::REST_OF_PATH && $index === count($pattern) - 1) {
+                return count($path) > $index;
+            }
 
-        return (bool) $route->match($this->request);
+            $called = $path[$index] ?? null;
+            if ($called === null || ($part !== $called && !str_starts_with($part, self::PARAMETER_PREFIX))) {
+                return false;
+            }
+        }
+
+        return count($path) === count($pattern);
+    }
+
+    /**
+     * Non-empty segments of a path
+     *
+     * @param string $path
+     * @return list<string>
+     */
+    private function segments(string $path): array
+    {
+        return array_values(array_filter(explode('/', trim($path)), static fn (string $part): bool => $part !== ''));
     }
 }

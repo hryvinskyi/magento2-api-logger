@@ -10,9 +10,12 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Api;
 
 /**
- * Configuration Service Interface
+ * REST logging settings
  *
- * Provides access to module configuration settings
+ * Secrets are masked by the activity log's own secret list, and the REST channel's retention is applied by the
+ * activity log; neither is a setting of this module any more.
+ *
+ * @api
  */
 interface ConfigInterface
 {
@@ -23,13 +26,12 @@ interface ConfigInterface
     public const XML_PATH_LOG_REQUEST_BODY = 'api_logger/general/log_request_body';
     public const XML_PATH_LOG_RESPONSE_HEADERS = 'api_logger/general/log_response_headers';
     public const XML_PATH_LOG_RESPONSE_BODY = 'api_logger/general/log_response_body';
-    public const XML_PATH_SANITIZE_SECRETS = 'api_logger/general/sanitize_secrets';
-    public const XML_PATH_SECRET_FIELDS = 'api_logger/general/secret_fields';
-    public const XML_PATH_RETENTION_DAYS = 'api_logger/cleanup/retention_days';
-    public const XML_PATH_CLEANUP_ENABLED = 'api_logger/cleanup/enabled';
+    public const XML_PATH_RETENTION_DAYS = 'api_logger/retention/days';
+    public const XML_PATH_REPLAY_BASE_URL = 'api_logger/replay/base_url';
+    public const XML_PATH_REPLAY_TOKEN = 'api_logger/replay/token';
 
     /**
-     * Check if logging is enabled
+     * Whether REST calls are logged
      *
      * @param int|null $storeId
      * @return bool
@@ -37,28 +39,23 @@ interface ConfigInterface
     public function isEnabled(?int $storeId = null): bool;
 
     /**
-     * Get list of enabled endpoints for logging
-     *
-     * Returns array of endpoint patterns (e.g., /V1/products/:id)
+     * Endpoint patterns that are logged, as "METHOD|/V1/route"
      *
      * @param int|null $storeId
-     * @return array<string>
+     * @return list<string>
      */
     public function getEnabledEndpoints(?int $storeId = null): array;
 
     /**
-     * Get list of enabled response codes for logging
-     *
-     * Returns array of HTTP response codes (e.g., ['200', '404', '500'])
-     * Empty array means log all response codes
+     * Response codes that are logged; every code when empty
      *
      * @param int|null $storeId
-     * @return array<string>
+     * @return list<string>
      */
     public function getEnabledResponseCodes(?int $storeId = null): array;
 
     /**
-     * Check if request headers should be logged
+     * Whether request headers are stored
      *
      * @param int|null $storeId
      * @return bool
@@ -66,7 +63,7 @@ interface ConfigInterface
     public function shouldLogRequestHeaders(?int $storeId = null): bool;
 
     /**
-     * Check if request body should be logged
+     * Whether request bodies are stored
      *
      * @param int|null $storeId
      * @return bool
@@ -74,7 +71,7 @@ interface ConfigInterface
     public function shouldLogRequestBody(?int $storeId = null): bool;
 
     /**
-     * Check if response headers should be logged
+     * Whether response headers are stored
      *
      * @param int|null $storeId
      * @return bool
@@ -82,7 +79,7 @@ interface ConfigInterface
     public function shouldLogResponseHeaders(?int $storeId = null): bool;
 
     /**
-     * Check if response body should be logged
+     * Whether response bodies are stored
      *
      * @param int|null $storeId
      * @return bool
@@ -90,34 +87,16 @@ interface ConfigInterface
     public function shouldLogResponseBody(?int $storeId = null): bool;
 
     /**
-     * Check if secrets should be sanitized
+     * Base URL replayed calls are sent to, e.g. a staging store; null to replay against this store
      *
-     * @param int|null $storeId
-     * @return bool
+     * @return string|null
      */
-    public function shouldSanitizeSecrets(?int $storeId = null): bool;
+    public function getReplayBaseUrl(): ?string;
 
     /**
-     * Get list of field names considered secrets
+     * Bearer token replays to the replay base URL carry, or null
      *
-     * @param int|null $storeId
-     * @return array<string>
+     * @return string|null
      */
-    public function getSecretFields(?int $storeId = null): array;
-
-    /**
-     * Get retention period in days
-     *
-     * @param int|null $storeId
-     * @return int
-     */
-    public function getRetentionDays(?int $storeId = null): int;
-
-    /**
-     * Check if automatic cleanup is enabled
-     *
-     * @param int|null $storeId
-     * @return bool
-     */
-    public function isCleanupEnabled(?int $storeId = null): bool;
+    public function getReplayToken(): ?string;
 }

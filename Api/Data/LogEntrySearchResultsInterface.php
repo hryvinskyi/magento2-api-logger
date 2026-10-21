@@ -19,14 +19,14 @@ interface LogEntrySearchResultsInterface extends SearchResultsInterface
     /**
      * Get log entries list
      *
-     * @return \Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface[]
+     * @return list<\Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface>
      */
     public function getItems(): array;
 
     /**
      * Set log entries list
      *
-     * @param \Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface[] $items
+     * @param list<\Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface> $items
      * @return $this
      */
     public function setItems(array $items): LogEntrySearchResultsInterface;

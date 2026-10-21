@@ -19,10 +19,7 @@ use Magento\Framework\Registry;
 use Magento\Framework\Serialize\SerializerInterface;
 
 /**
- * Backend model for endpoint list configuration
- *
- * Handles conversion between comma-separated string (from frontend)
- * and serialized array (for database storage)
+ * Stores the chosen endpoints as a JSON list; the settings page posts and shows them as "METHOD|/route" values
  */
 class EndpointList extends Value
 {
@@ -34,7 +31,7 @@ class EndpointList extends Value
      * @param SerializerInterface $serializer
      * @param AbstractResource|null $resource
      * @param AbstractDb|null $resourceCollection
-     * @param array<string, mixed> $data
+     * @param array<string,mixed> $data
      */
     public function __construct(
         Context $context,
@@ -46,64 +43,55 @@ class EndpointList extends Value
         ?AbstractDb $resourceCollection = null,
         array $data = []
     ) {
-        parent::__construct(
-            $context,
-            $registry,
-            $config,
-            $cacheTypeList,
-            $resource,
-            $resourceCollection,
-            $data
-        );
+        parent::__construct($context, $registry, $config, $cacheTypeList, $resource, $resourceCollection, $data);
     }
 
     /**
-     * Process data before saving
-     *
-     * Converts comma-separated string from frontend to serialized array for database
+     * Turn the posted values into the stored JSON list
      *
      * @return $this
      */
     public function beforeSave(): self
     {
-        $value = $this->getValue();
-
-        if (is_string($value) && !empty($value)) {
-            // Split comma-separated string into array
-            $endpoints = array_filter(array_map('trim', explode(',', $value)));
-            // Serialize for database storage
-            $this->setValue($this->serializer->serialize($endpoints));
-        } elseif (empty($value)) {
-            // Empty value should be stored as empty serialized array
-            $this->setValue($this->serializer->serialize([]));
+        $value = $this->getData('value');
+        $endpoints = [];
+        foreach (is_string($value) ? explode(',', $value) : [] as $endpoint) {
+            if (trim($endpoint) !== '') {
+                $endpoints[] = trim($endpoint);
+            }
         }
+
+        $this->setData('value', (string) $this->serializer->serialize($endpoints));
 
         return parent::beforeSave();
     }
 
     /**
-     * Process data after loading
-     *
-     * Converts serialized array from database to comma-separated string for frontend
+     * Turn the stored JSON list back into the values the settings page shows
      *
      * @return $this
      */
-    protected function _afterLoad()
+    protected function _afterLoad(): self
     {
-        $value = $this->getValue();
-        if (!is_array($value)) {
-            try {
-                $this->setValue(empty($value) ? false : $this->serializer->unserialize($value));
-            } catch (\Exception $e) {
-                $this->_logger->critical(
-                    sprintf(
-                        'Failed to unserialize %s config value. The error is: %s',
-                        $this->getPath(),
-                        $e->getMessage()
-                    )
-                );
-                $this->setValue([]);
-            }
+        $value = $this->getData('value');
+        if (!is_string($value) || $value === '') {
+            $this->setData('value', []);
+
+            return $this;
         }
+
+        try {
+            $endpoints = $this->serializer->unserialize($value);
+        } catch (\InvalidArgumentException $exception) {
+            $this->_logger->warning(
+                sprintf('The setting %s is not a JSON list.', $this->getPath()),
+                ['exception' => $exception]
+            );
+            $endpoints = [];
+        }
+
+        $this->setData('value', is_array($endpoints) ? array_values($endpoints) : []);
+
+        return $this;
     }
 }

@@ -10,38 +10,31 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Controller\Adminhtml\Log;
 
 use Magento\Backend\App\Action;
-use Magento\Backend\App\Action\Context;
-use Magento\Backend\Model\View\Result\Page;
 use Magento\Framework\App\Action\HttpGetActionInterface;
-use Magento\Framework\View\Result\PageFactory;
+use Magento\Framework\Controller\Result\Redirect;
+use Magento\Framework\Controller\ResultFactory;
+use Magento\Framework\Controller\ResultInterface;
 
 /**
- * Dashboard page controller
+ * The REST dashboard became part of the activity log dashboard; old links and bookmarks land there
  */
 class Dashboard extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'Hryvinskyi_ApiLogger::dashboard';
+    public const ADMIN_RESOURCE = 'Hryvinskyi_ApiLogger::logs';
+    private const ACTIVITY_DASHBOARD = 'activitylog/dashboard/index';
 
     /**
-     * @param Context $context
-     * @param PageFactory $resultPageFactory
+     * Send the admin to the activity log dashboard
+     *
+     * @return ResultInterface
      */
-    public function __construct(
-        Context $context,
-        private readonly PageFactory $resultPageFactory
-    ) {
-        parent::__construct($context);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function execute(): Page
+    public function execute(): ResultInterface
     {
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Hryvinskyi_ApiLogger::dashboard');
-        $resultPage->getConfig()->getTitle()->prepend(__('API Logger Dashboard'));
+        $redirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
+        if ($redirect instanceof Redirect) {
+            $redirect->setPath(self::ACTIVITY_DASHBOARD);
+        }
 
-        return $resultPage;
+        return $redirect;
     }
 }

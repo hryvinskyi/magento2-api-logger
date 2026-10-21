@@ -1,0 +1,246 @@
+<?php
+/**
+ * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+
+declare(strict_types=1);
+
+use Hryvinskyi\ApiLogger\ViewModel\RestCallPanel;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/**
+ * @var Template $block
+ * @var Escaper $escaper
+ */
+
+$panel = $block->getData('panel');
+if (!$panel instanceof RestCallPanel) {
+    return;
+}
+$entry = $panel->entry();
+?>
+<?php if ($entry === null): ?>
+    <section class="activity-section rest-panel">
+        <div class="activity-section__header">
+            <span class="activity-section__title"><?= $escaper->escapeHtml(__('REST request')) ?></span>
+        </div>
+        <p class="activity-section__note">
+            <?= $escaper->escapeHtml(__('The stored request and response of this call were removed.')) ?>
+        </p>
+    </section>
+    <?php return; ?>
+<?php endif; ?>
+<?php
+$url = $panel->url($entry);
+$parts = [
+    'request' => [
+        'headers' => $panel->headers($entry->getRequestHeaders()),
+        'body' => $entry->getRequestBody(),
+        'type' => $panel->contentType($entry->getRequestHeaders()),
+    ],
+    'response' => [
+        'headers' => $panel->headers($entry->getResponseHeaders()),
+        'body' => $entry->getResponseBody(),
+        'type' => $panel->contentType($entry->getResponseHeaders()),
+    ],
+];
+?>
+<section class="activity-section rest-panel"
+         data-mage-init='<?= $escaper->escapeHtmlAttr($panel->scriptConfig($entry)) ?>'>
+    <div class="activity-section__header rest-panel__header">
+        <span class="activity-section__title"><?= $escaper->escapeHtml(__('REST request')) ?></span>
+        <span class="activity-section__note"><?= $escaper->escapeHtml(__('stored request and response')) ?></span>
+        <div class="rest-panel__actions">
+            <?php if ($panel->canReplay()): ?>
+                <button type="button" class="rest-button" data-role="replay">
+                    <svg class="rest-button__icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 12a9 9 0 109-9 9 9 0 00-7 3.3"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    <?= $escaper->escapeHtml(__('Replay')) ?>
+                </button>
+            <?php endif; ?>
+            <button type="button" class="rest-button" data-role="compare">
+                <svg class="rest-button__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 5h7v14H4zM13 5h7v14h-7z"/>
+                </svg>
+                <?= $escaper->escapeHtml(__('Compare')) ?>
+            </button>
+            <div class="rest-panel__export">
+                <button type="button" class="rest-button" data-role="export-toggle" aria-expanded="false"
+                        aria-haspopup="true">
+                    <?= $escaper->escapeHtml(__('Export')) ?>
+                    <svg class="rest-button__caret" viewBox="0 0 10 6" aria-hidden="true">
+                        <path d="M1 1l4 4 4-4"/>
+                    </svg>
+                </button>
+                <ul class="rest-panel__export-menu" data-role="export-menu" hidden>
+                    <?php foreach ($panel->exports($entry) as $export): ?>
+                        <li>
+                            <a href="<?= $escaper->escapeUrl($export['url']) ?>">
+                                <?= $escaper->escapeHtml($export['label']) ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="rest-panel__tabs" role="tablist">
+        <button type="button" class="rest-panel__tab" role="tab" data-role="tab" data-tab="request"
+                aria-selected="true"><?= $escaper->escapeHtml(__('Request')) ?></button>
+        <button type="button" class="rest-panel__tab" role="tab" data-role="tab" data-tab="response"
+                aria-selected="false"><?= $escaper->escapeHtml(__('Response')) ?></button>
+    </div>
+
+    <?php foreach ($parts as $part => $data): ?>
+        <div class="rest-panel__pane" role="tabpanel" data-role="pane" data-tab="<?= $escaper->escapeHtmlAttr($part) ?>"
+             <?= $part === 'request' ? '' : 'hidden' ?>>
+            <div class="rest-panel__line">
+                <?php if ($part === 'request'): ?>
+                    <span class="rest-method"><?= $escaper->escapeHtml($entry->getMethod()) ?></span>
+                    <span class="rest-panel__url<?= $panel->isLongUrl($entry) ? ' rest-panel__url--clamped' : '' ?>"
+                          data-role="url"
+                          title="<?= $escaper->escapeHtmlAttr($url) ?>"><?= $escaper->escapeHtml($url) ?></span>
+                    <span class="rest-panel__meta">
+                        <?= $escaper->escapeHtml(implode(' · ', array_filter([
+                            'HTTP/1.1',
+                            (string) __('body %1', $panel->size($data['body'])),
+                            $data['type'],
+                        ]))) ?>
+                    </span>
+                <?php else: ?>
+                    <span class="rest-status rest-status--<?= $escaper->escapeHtmlAttr($panel->statusTone($entry)) ?>">
+                        <?= $escaper->escapeHtml($panel->statusText($entry)) ?>
+                    </span>
+                    <span class="rest-panel__meta">
+                        <?= $escaper->escapeHtml(implode(' · ', array_filter([
+                            $panel->size($data['body']),
+                            $entry->getDuration() === null
+                                ? ''
+                                : sprintf('%s ms', number_format($entry->getDuration())),
+                            $data['type'],
+                        ]))) ?>
+                    </span>
+                <?php endif; ?>
+            </div>
+
+            <h3 class="rest-heading"><?= $escaper->escapeHtml(__('Headers')) ?></h3>
+            <?php if ($data['headers'] === []): ?>
+                <p class="activity-section__note"><?= $escaper->escapeHtml(__('No headers were stored.')) ?></p>
+            <?php else: ?>
+                <table class="rest-pairs">
+                    <tbody>
+                    <?php foreach ($data['headers'] as $header): ?>
+                        <tr>
+                            <th scope="row"><?= $escaper->escapeHtml($header['name']) ?></th>
+                            <td>
+                                <?= $escaper->escapeHtml($header['value']) ?>
+                                <?php if ($header['masked']): ?>
+                                    <span class="rest-tag"><?= $escaper->escapeHtml(__('masked')) ?></span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+
+            <div class="rest-body" data-role="body" data-part="<?= $escaper->escapeHtmlAttr($part) ?>">
+                <div class="rest-body__bar">
+                    <h3 class="rest-heading">
+                        <?= $escaper->escapeHtml(__('Body')) ?>
+                        <span class="rest-heading__note" data-role="body-meta">· <?=
+                            $escaper->escapeHtml($panel->size($data['body']))
+                        ?></span>
+                    </h3>
+                    <?php if ((string) $data['body'] !== ''): ?>
+                        <div class="rest-body__tools">
+                            <span class="rest-body__search">
+                                <input type="search" data-role="body-search"
+                                       placeholder="<?= $escaper->escapeHtmlAttr(__('Search in body')) ?>"
+                                       aria-label="<?= $escaper->escapeHtmlAttr(__('Search in body')) ?>">
+                                <span class="rest-body__hits" data-role="body-hits"></span>
+                            </span>
+                            <button type="button" class="rest-button rest-button--small" data-role="body-copy">
+                                <?= $escaper->escapeHtml(__('Copy')) ?>
+                            </button>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <?php if ((string) $data['body'] === ''): ?>
+                    <p class="activity-section__note"><?= $escaper->escapeHtml(__('No body was stored.')) ?></p>
+                <?php else: ?>
+                    <div class="rest-body__lines" data-role="body-lines" aria-live="polite"></div>
+                    <div class="rest-body__more" data-role="body-more" hidden>
+                        <span data-role="body-note"></span>
+                        <button type="button" class="rest-button rest-button--small" data-role="body-next">
+                            <?= $escaper->escapeHtml(__('Load next 500 lines')) ?>
+                        </button>
+                        <a class="rest-button rest-button--small" data-role="body-download"
+                           href="<?= $escaper->escapeUrl($panel->downloadUrl($entry, $part)) ?>">
+                            <?= $escaper->escapeHtml(__('Download body')) ?>
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endforeach; ?>
+
+    <div class="rest-dialog" data-role="replay-dialog" hidden
+         data-title="<?= $escaper->escapeHtmlAttr(__('Replay this request?')) ?>">
+        <?php $replayTarget = $panel->replayTarget($entry); ?>
+        <p class="rest-panel__line">
+            <span class="rest-method"><?= $escaper->escapeHtml($entry->getMethod()) ?></span>
+            <span class="rest-panel__url rest-panel__url--clamped" data-role="replay-target"
+                  title="<?= $escaper->escapeHtmlAttr($replayTarget) ?>"
+            ><?= $escaper->escapeHtml($replayTarget) ?></span>
+        </p>
+        <?php if ($panel->replayWrites($entry)): ?>
+            <?php
+            $writeWarning = __(
+                'This is a write request. Replaying it sends the stored body again and may create or modify data.'
+            );
+            ?>
+            <p class="rest-warning">
+                <?= $escaper->escapeHtml($writeWarning) ?>
+            </p>
+        <?php endif; ?>
+        <p class="activity-section__note">
+            <?= $escaper->escapeHtml($panel->replaysToThisStore()
+                ? __('It is sent to this store as you, not as the original caller, and logged as a new call.')
+                : __('It is sent to the staging store with the token set for replays there.')) ?>
+        </p>
+        <div class="rest-replay" data-role="replay-result" hidden></div>
+    </div>
+
+    <div class="rest-dialog" data-role="compare-dialog" hidden
+         data-title="<?= $escaper->escapeHtmlAttr(__('Compare with another request')) ?>">
+        <p class="activity-section__note">
+            <?= $escaper->escapeHtml(
+                __('Pick a request to diff against this one. Only requests to the same endpoint are listed.')
+            ) ?>
+        </p>
+        <input type="search" class="rest-dialog__search" data-role="compare-search"
+               placeholder="<?= $escaper->escapeHtmlAttr(__('Search by status or correlation ID')) ?>"
+               aria-label="<?= $escaper->escapeHtmlAttr(__('Search by status or correlation ID')) ?>">
+        <table class="rest-candidates">
+            <thead>
+            <tr>
+                <th scope="col"><span class="rest-visually-hidden"><?= $escaper->escapeHtml(__('Pick')) ?></span></th>
+                <th scope="col"><?= $escaper->escapeHtml(__('Time')) ?></th>
+                <th scope="col"><?= $escaper->escapeHtml(__('Actor')) ?></th>
+                <th scope="col"><?= $escaper->escapeHtml(__('Status')) ?></th>
+                <th scope="col"><?= $escaper->escapeHtml(__('Duration')) ?></th>
+                <th scope="col"><?= $escaper->escapeHtml(__('Correlation ID')) ?></th>
+            </tr>
+            </thead>
+            <tbody data-role="compare-rows"></tbody>
+        </table>
+        <div class="rest-diff" data-role="compare-diff" hidden></div>
+    </div>
+</section>

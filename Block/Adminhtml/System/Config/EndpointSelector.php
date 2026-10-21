@@ -13,115 +13,111 @@ use Hryvinskyi\ApiLogger\Model\Config\Source\Endpoints;
 use Magento\Backend\Block\Template\Context;
 use Magento\Config\Block\System\Config\Form\Field;
 use Magento\Framework\Data\Form\Element\AbstractElement;
-use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Framework\Serialize\Serializer\JsonHexTag;
 
 /**
- * Advanced Endpoint Selector Frontend Model
+ * The endpoint picker of the REST logging settings: every declared route grouped by resource, with search
  *
- * Provides a sophisticated UI for selecting API endpoints to log
- * Features: grouped checkboxes, search, select all/none, expandable groups
+ * The picker stays usable while the value is inherited; the script greys it out with the "Use default" box.
+ *
+ * @phpstan-import-type Endpoint from Endpoints
  */
 class EndpointSelector extends Field
 {
+    /**
+     * @var string
+     */
     protected $_template = 'Hryvinskyi_ApiLogger::system/config/endpoint_selector.phtml';
+
+    /**
+     * @var AbstractElement|null
+     */
+    private ?AbstractElement $field = null;
 
     /**
      * @param Context $context
      * @param Endpoints $endpointsSource
-     * @param SerializerInterface $serializer
-     * @param array<string, mixed> $data
+     * @param JsonHexTag $json
+     * @param array<string,mixed> $data
      */
     public function __construct(
         Context $context,
         private readonly Endpoints $endpointsSource,
-        private readonly SerializerInterface $serializer,
+        private readonly JsonHexTag $json,
         array $data = []
     ) {
         parent::__construct($context, $data);
     }
 
     /**
-     * Render element HTML
+     * Render the settings row with the picker in place of an input
      *
-     * Override parent to prevent automatic disabling when inherit checkbox is checked
+     * The parent's render is not used: it disables the field while the value is inherited, and the picker has to
+     * stay interactive.
      *
      * @param AbstractElement $element
      * @return string
      */
     public function render(AbstractElement $element): string
     {
-        $this->setElement($element);
+        $this->field = $element;
 
-        // Do NOT call parent::render() because it sets $element->setDisabled(true)
-        // when inherit checkbox is checked. We want our custom UI to remain interactive.
+        $html = '<td class="label"><label for="' . $this->escapeHtmlAttr($element->getHtmlId()) . '"><span'
+            . $this->_renderScopeLabel($element) . '>' . $this->escapeHtml($this->text($element->getData('label')))
+            . '</span></label></td>'
+            . '<td class="value">' . $this->_toHtml() . '</td>';
 
-        $isCheckboxRequired = $this->_isInheritCheckboxRequired($element);
-
-        // Build the table row HTML structure manually
-        $html = '<td class="label"><label for="' .
-            $element->getHtmlId() . '"><span' .
-            $this->_renderScopeLabel($element) . '>' .
-            $element->getLabel() .
-            '</span></label></td>';
-
-        // Render our custom template
-        $html .= '<td class="value">' . $this->_toHtml() . '</td>';
-
-        // Add inherit checkbox if required
-        if ($isCheckboxRequired) {
+        if ($this->_isInheritCheckboxRequired($element)) {
             $html .= $this->_renderInheritCheckbox($element);
         }
 
-        // Add hint
-        $html .= $this->_renderHint($element);
-
-        return $this->_decorateRowHtml($element, $html);
+        return $this->_decorateRowHtml($element, $html . $this->_renderHint($element));
     }
 
     /**
-     * Get element HTML ID
+     * Id of the hidden input that carries the value
      *
      * @return string
      */
     public function getElementId(): string
     {
-        return $this->getElement()->getHtmlId();
+        return $this->field === null ? '' : (string) $this->field->getHtmlId();
     }
 
     /**
-     * Get element name
+     * Name the value is posted under
      *
      * @return string
      */
     public function getElementName(): string
     {
-        return $this->getElement()->getName();
+        return $this->field === null ? '' : $this->text($this->field->getName());
     }
 
     /**
-     * Get selected endpoints
+     * Saved "METHOD|/route" values
      *
-     * @return array<string>
+     * @return list<string>
      */
     public function getSelectedEndpoints(): array
     {
-        $value = $this->getElement()->getValue();
+        $value = $this->field?->getData('value');
+        $values = is_string($value) ? explode(',', $value) : (is_array($value) ? $value : []);
 
-        if (empty($value)) {
-            return [];
+        $selected = [];
+        foreach ($values as $item) {
+            if (is_scalar($item) && trim((string) $item) !== '') {
+                $selected[] = trim((string) $item);
+            }
         }
 
-        if (is_string($value)) {
-            return array_filter(array_map('trim', explode(',', $value)));
-        }
-
-        return is_array($value) ? $value : [];
+        return $selected;
     }
 
     /**
-     * Get grouped endpoints
+     * Routes grouped by resource
      *
-     * @return array<string, array<array{value: string, label: string}>>
+     * @return array<string, list<Endpoint>>
      */
     public function getGroupedEndpoints(): array
     {
@@ -129,57 +125,35 @@ class EndpointSelector extends Field
     }
 
     /**
-     * Get grouped endpoints as JSON
-     *
-     * @return string
-     */
-    public function getGroupedEndpointsJson(): string
-    {
-        return $this->serializer->serialize($this->getGroupedEndpoints());
-    }
-
-    /**
-     * Get selected endpoints as JSON
-     *
-     * @return string
-     */
-    public function getSelectedEndpointsJson(): string
-    {
-        return $this->serializer->serialize($this->getSelectedEndpoints());
-    }
-
-    /**
-     * Check if endpoint is selected
-     *
-     * @param string $endpoint
-     * @return bool
-     */
-    public function isEndpointSelected(string $endpoint): bool
-    {
-        return in_array($endpoint, $this->getSelectedEndpoints(), true);
-    }
-
-    /**
-     * Get total count of endpoints
+     * How many routes the picker lists
      *
      * @return int
      */
     public function getTotalEndpointsCount(): int
     {
-        $count = 0;
-        foreach ($this->getGroupedEndpoints() as $group => $endpoints) {
-            $count += count($endpoints);
-        }
-        return $count;
+        return array_sum(array_map('count', $this->getGroupedEndpoints()));
     }
 
     /**
-     * Get count of selected endpoints
+     * Script config of the picker, for data-mage-init
      *
-     * @return int
+     * @return string
      */
-    public function getSelectedEndpointsCount(): int
+    public function getScriptConfig(): string
     {
-        return count($this->getSelectedEndpoints());
+        return (string) $this->json->serialize([
+            'Hryvinskyi_ApiLogger/js/view/endpoint-selector' => ['inputId' => $this->getElementId()],
+        ]);
+    }
+
+    /**
+     * Cast a scalar to its string form, anything else to an empty string
+     *
+     * @param mixed $value
+     * @return string
+     */
+    private function text(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
     }
 }

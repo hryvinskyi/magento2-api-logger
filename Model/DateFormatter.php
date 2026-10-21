@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Model;
 
 use Hryvinskyi\ApiLogger\Api\DateFormatterInterface;
+use Magento\Framework\Intl\DateTimeFactory;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 
 /**
@@ -17,11 +18,15 @@ use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
  */
 class DateFormatter implements DateFormatterInterface
 {
+    private const STORED_TIMEZONE = 'UTC';
+
     /**
      * @param TimezoneInterface $timezone
+     * @param DateTimeFactory $dateTimeFactory
      */
     public function __construct(
-        private readonly TimezoneInterface $timezone
+        private readonly TimezoneInterface $timezone,
+        private readonly DateTimeFactory $dateTimeFactory
     ) {
     }
 
@@ -36,14 +41,7 @@ class DateFormatter implements DateFormatterInterface
         }
 
         // Use the locale's medium date-time pattern, matching the log grid Created At column.
-        return $this->timezone->formatDateTime(
-            $date,
-            \IntlDateFormatter::MEDIUM,
-            \IntlDateFormatter::MEDIUM,
-            null,
-            null,
-            $this->timezone->getDateTimeFormat(\IntlDateFormatter::MEDIUM)
-        );
+        return $this->timezone->formatDateTime($date, \IntlDateFormatter::MEDIUM, \IntlDateFormatter::MEDIUM);
     }
 
     /**
@@ -62,7 +60,7 @@ class DateFormatter implements DateFormatterInterface
     /**
      * Build a DateTime in UTC from a stored timestamp string
      *
-     * @param string|null $utcDate Timestamp as stored in the database (UTC)
+     * @param string|null $utcDate Timestamp as stored in the database: "Y-m-d H:i:s" in UTC
      * @return \DateTime|null Null when the input is empty or cannot be parsed
      */
     private function createUtcDate(?string $utcDate): ?\DateTime
@@ -77,8 +75,8 @@ class DateFormatter implements DateFormatterInterface
         }
 
         try {
-            return new \DateTime($trimmed, new \DateTimeZone('UTC'));
-        } catch (\Exception $e) {
+            return $this->dateTimeFactory->create($trimmed . ' ' . self::STORED_TIMEZONE);
+        } catch (\Exception) {
             return null;
         }
     }

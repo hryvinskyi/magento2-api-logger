@@ -10,19 +10,35 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Model\Data;
 
 use Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface;
+use Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry as LogEntryResource;
 use Magento\Framework\Model\AbstractModel;
 
 /**
- * Log Entry Data Model
+ * A logged REST call, stored in its own table and journaled as an activity
+ *
+ * The endpoint is stored in two columns: the path, indexed and cut to its column's length, and the query, kept whole.
+ * Readers get the one string back.
  */
 class LogEntry extends AbstractModel implements LogEntryInterface
 {
+    private const QUERY_SEPARATOR = '?';
+
     /**
-     * @inheritDoc
+     * Bind the model to its table
+     *
+     * @return void
      */
     protected function _construct(): void
     {
-        $this->_init(\Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry::class);
+        $this->_init(LogEntryResource::class);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getEntityId(): ?int
+    {
+        return $this->nullableInt(self::ENTITY_ID);
     }
 
     /**
@@ -30,7 +46,9 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getEndpoint(): string
     {
-        return (string)$this->getData(self::ENDPOINT);
+        $query = $this->nullableText(self::QUERY_STRING);
+
+        return $this->text(self::ENDPOINT) . ($query !== null ? self::QUERY_SEPARATOR . $query : '');
     }
 
     /**
@@ -38,7 +56,10 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function setEndpoint(string $endpoint): self
     {
-        return $this->setData(self::ENDPOINT, $endpoint);
+        $parts = explode(self::QUERY_SEPARATOR, $endpoint, 2);
+
+        return $this->setData(self::ENDPOINT, mb_substr($parts[0], 0, LogEntryResource::PATH_MAX_LENGTH))
+            ->setData(self::QUERY_STRING, $parts[1] ?? null);
     }
 
     /**
@@ -46,7 +67,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getMethod(): string
     {
-        return (string)$this->getData(self::METHOD);
+        return $this->text(self::METHOD);
     }
 
     /**
@@ -62,7 +83,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getRequestHeaders(): ?string
     {
-        return $this->getData(self::REQUEST_HEADERS);
+        return $this->nullableText(self::REQUEST_HEADERS);
     }
 
     /**
@@ -78,7 +99,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getRequestBody(): ?string
     {
-        return $this->getData(self::REQUEST_BODY);
+        return $this->nullableText(self::REQUEST_BODY);
     }
 
     /**
@@ -94,7 +115,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getResponseHeaders(): ?string
     {
-        return $this->getData(self::RESPONSE_HEADERS);
+        return $this->nullableText(self::RESPONSE_HEADERS);
     }
 
     /**
@@ -110,7 +131,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getResponseBody(): ?string
     {
-        return $this->getData(self::RESPONSE_BODY);
+        return $this->nullableText(self::RESPONSE_BODY);
     }
 
     /**
@@ -126,8 +147,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getResponseCode(): ?int
     {
-        $value = $this->getData(self::RESPONSE_CODE);
-        return $value !== null ? (int)$value : null;
+        return $this->nullableInt(self::RESPONSE_CODE);
     }
 
     /**
@@ -143,8 +163,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getDuration(): ?float
     {
-        $value = $this->getData(self::DURATION);
-        return $value !== null ? (float)$value : null;
+        return $this->nullableFloat(self::DURATION);
     }
 
     /**
@@ -160,7 +179,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function isException(): bool
     {
-        return (bool)$this->getData(self::IS_EXCEPTION);
+        return (bool) $this->getData(self::IS_EXCEPTION);
     }
 
     /**
@@ -176,8 +195,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getStoreId(): ?int
     {
-        $value = $this->getData(self::STORE_ID);
-        return $value !== null ? (int)$value : null;
+        return $this->nullableInt(self::STORE_ID);
     }
 
     /**
@@ -193,7 +211,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getIpAddress(): ?string
     {
-        return $this->getData(self::IP_ADDRESS);
+        return $this->nullableText(self::IP_ADDRESS);
     }
 
     /**
@@ -209,7 +227,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getUserAgent(): ?string
     {
-        return $this->getData(self::USER_AGENT);
+        return $this->nullableText(self::USER_AGENT);
     }
 
     /**
@@ -225,7 +243,7 @@ class LogEntry extends AbstractModel implements LogEntryInterface
      */
     public function getCreatedAt(): ?string
     {
-        return $this->getData(self::CREATED_AT);
+        return $this->nullableText(self::CREATED_AT);
     }
 
     /**
@@ -234,5 +252,89 @@ class LogEntry extends AbstractModel implements LogEntryInterface
     public function setCreatedAt(string $createdAt): self
     {
         return $this->setData(self::CREATED_AT, $createdAt);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getActivityId(): ?int
+    {
+        return $this->nullableInt(self::ACTIVITY_ID);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setActivityId(?int $activityId): self
+    {
+        return $this->setData(self::ACTIVITY_ID, $activityId);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getCorrelationId(): ?string
+    {
+        return $this->nullableText(self::CORRELATION_ID);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setCorrelationId(?string $correlationId): self
+    {
+        return $this->setData(self::CORRELATION_ID, $correlationId);
+    }
+
+    /**
+     * A stored value as text
+     *
+     * @param string $key
+     * @return string
+     */
+    private function text(string $key): string
+    {
+        $value = $this->getData($key);
+
+        return is_scalar($value) ? (string) $value : '';
+    }
+
+    /**
+     * A stored value as text, or null when there is none
+     *
+     * @param string $key
+     * @return string|null
+     */
+    private function nullableText(string $key): ?string
+    {
+        $value = $this->getData($key);
+
+        return is_scalar($value) ? (string) $value : null;
+    }
+
+    /**
+     * A stored value as a whole number, or null when there is none
+     *
+     * @param string $key
+     * @return int|null
+     */
+    private function nullableInt(string $key): ?int
+    {
+        $value = $this->getData($key);
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    /**
+     * A stored value as a number, or null when there is none
+     *
+     * @param string $key
+     * @return float|null
+     */
+    private function nullableFloat(string $key): ?float
+    {
+        $value = $this->getData($key);
+
+        return is_numeric($value) ? (float) $value : null;
     }
 }

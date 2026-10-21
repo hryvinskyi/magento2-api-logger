@@ -17,9 +17,9 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\CouldNotDeleteException;
 
 /**
- * Log Entry Repository Interface
+ * Stores and finds logged REST calls
  *
- * Handles CRUD operations for API log entries
+ * @api
  */
 interface LogEntryRepositoryInterface
 {
@@ -40,6 +40,15 @@ interface LogEntryRepositoryInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $entityId): LogEntryInterface;
+
+    /**
+     * Get the log entry of a journal activity
+     *
+     * @param int $activityId
+     * @return LogEntryInterface
+     * @throws NoSuchEntityException
+     */
+    public function getByActivityId(int $activityId): LogEntryInterface;
 
     /**
      * Get list of log entries matching search criteria

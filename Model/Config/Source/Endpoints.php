@@ -11,166 +11,130 @@ namespace Hryvinskyi\ApiLogger\Model\Config\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
 use Magento\Webapi\Model\Config;
+use Magento\Webapi\Model\Config\Converter;
 
 /**
- * Source model for API endpoints
+ * Every REST route the installed modules declare, for choosing which ones are logged
  *
- * Provides list of available API endpoints from webapi.xml
+ * @phpstan-type Endpoint array{value: string, label: string, method: string}
  */
 class Endpoints implements OptionSourceInterface
 {
-    private ?array $options = null;
-
+    /**
+     * @param Config $webapiConfig
+     */
     public function __construct(
         private readonly Config $webapiConfig
     ) {
     }
 
     /**
-     * Get options as array with value and label
+     * Each route once, by group then label
      *
-     * @return array<array{value: string, label: string, group: string}>
+     * @return list<array{value: string, label: string, group: string}>
      */
     public function toOptionArray(): array
     {
-        if ($this->options === null) {
-            $this->options = $this->buildOptions();
+        $options = [];
+        foreach (array_keys($this->routes()) as $route) {
+            $options[] = ['value' => $route, 'label' => $this->label($route), 'group' => $this->group($route)];
         }
 
-        return $this->options;
+        usort(
+            $options,
+            static fn (array $a, array $b): int => strcmp($a['group'] . $a['label'], $b['group'] . $b['label'])
+        );
+
+        return $options;
     }
 
     /**
-     * Get options as key-value pairs
+     * Routes grouped by resource, one entry per HTTP method
      *
-     * @return array<string, string>
-     */
-    public function toArray(): array
-    {
-        $options = $this->toOptionArray();
-        $result = [];
-
-        foreach ($options as $option) {
-            $result[$option['value']] = $option['label'];
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get grouped options for the advanced frontend
-     *
-     * @return array<string, array<array{value: string, label: string, methods: array<string>}>>
+     * @return array<string, list<Endpoint>>
      */
     public function getGroupedOptions(): array
     {
-        $services = $this->webapiConfig->getServices();
-        $routes = $services[Config\Converter::KEY_ROUTES] ?? [];
-
         $grouped = [];
-
-        foreach ($routes as $route => $methods) {
-            $routePath = '/' . trim($route, '/');
-            $group = $this->extractGroup($routePath);
-            $label = $this->formatLabel($routePath);
-
-            if (!isset($grouped[$group])) {
-                $grouped[$group] = [];
-            }
-
-            // Each HTTP method gets its own entry
-            foreach ($methods as $method => $config) {
-                $grouped[$group][] = [
-                    'value' => $routePath,
-                    'label' => $label,
-                    'method' => strtoupper($method)
+        foreach ($this->routes() as $route => $methods) {
+            foreach ($methods as $method) {
+                $grouped[$this->group($route)][] = [
+                    'value' => $route,
+                    'label' => $this->label($route),
+                    'method' => $method,
                 ];
             }
         }
 
-        // Sort groups alphabetically
         ksort($grouped);
-
-        // Sort endpoints within each group
-        foreach ($grouped as &$endpoints) {
-            usort($endpoints, fn($a, $b) => strcmp($a['method'] . $a['label'], $b['method'] . $b['label']));
+        foreach ($grouped as $group => $endpoints) {
+            usort(
+                $endpoints,
+                static fn (array $a, array $b): int => strcmp($a['method'] . $a['label'], $b['method'] . $b['label'])
+            );
+            $grouped[$group] = $endpoints;
         }
 
         return $grouped;
     }
 
     /**
-     * Build options from webapi configuration
+     * Declared routes with their HTTP methods, upper case
      *
-     * @return array<array{value: string, label: string, group: string}>
+     * @return array<string, list<string>>
      */
-    private function buildOptions(): array
+    private function routes(): array
     {
-        $options = [];
-        $services = $this->webapiConfig->getServices();
-
-        if (!isset($services[Config\Converter::KEY_ROUTES])) {
-            return $options;
+        $routes = $this->webapiConfig->getServices()[Converter::KEY_ROUTES] ?? [];
+        if (!is_array($routes)) {
+            return [];
         }
 
-        foreach ($services[Config\Converter::KEY_ROUTES] as $route => $methods) {
-            $routePath = '/' . trim($route, '/');
-            $group = $this->extractGroup($routePath);
-            $label = $this->formatLabel($routePath);
+        $result = [];
+        foreach ($routes as $route => $methods) {
+            if (!is_array($methods)) {
+                continue;
+            }
 
-            $options[] = [
-                'value' => $routePath,
-                'label' => $label,
-                'group' => $group
-            ];
+            $path = '/' . trim((string) $route, '/');
+            $result[$path] = array_map(
+                static fn (int|string $method): string => strtoupper((string) $method),
+                array_keys($methods)
+            );
         }
 
-        usort($options, fn($a, $b) => strcmp($a['group'] . $a['label'], $b['group'] . $b['label']));
-
-        return $options;
+        return $result;
     }
 
     /**
-     * Extract group name from route path
+     * The resource a route belongs to: "/V1/products/:sku" → "Products"
      *
      * @param string $route
      * @return string
      */
-    private function extractGroup(string $route): string
+    private function group(string $route): string
     {
-        // Extract group from route like /V1/products/:id -> Products
-        if (preg_match('#^/V\d+/([^/]+)#', $route, $matches)) {
-            return ucfirst($matches[1]);
-        }
-
-        return 'Other';
+        return preg_match('#^/V\d+/([^/]+)#', $route, $matches) === 1 ? ucfirst($matches[1]) : 'Other';
     }
 
     /**
-     * Format route path as readable label
+     * A route as people read it: "/V1/products/:sku" → "Products - Sku"
      *
      * @param string $route
      * @return string
      */
-    private function formatLabel(string $route): string
+    private function label(string $route): string
     {
-        // Convert /V1/products/:id to "Products - Get by ID"
         $parts = explode('/', trim($route, '/'));
-
         if (count($parts) < 2) {
             return $route;
         }
 
-        $version = array_shift($parts); // Remove V1
-        $resource = ucfirst(array_shift($parts));
+        $resource = ucfirst($parts[1]);
+        $action = array_slice($parts, 2);
 
-        if (empty($parts)) {
-            return $resource;
-        }
-
-        $action = implode(' ', array_map('ucfirst', $parts));
-        $action = str_replace(':', '', $action);
-
-        return "$resource - $action";
+        return $action === []
+            ? $resource
+            : $resource . ' - ' . str_replace(':', '', implode(' ', array_map('ucfirst', $action)));
     }
 }

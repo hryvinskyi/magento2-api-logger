@@ -9,85 +9,77 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Api\Rest;
 
-use Magento\Framework\App\HttpRequestInterface as RequestInterface;
-use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\App\Request\Http as HttpRequest;
+use Magento\Framework\Webapi\Rest\Response as RestResponse;
 
 /**
- * REST Extractor Interface
+ * Reads what a REST call sent and what it answered
  *
- * Extracts data from Magento REST API request and response objects
+ * @api
  */
 interface ExtractorInterface
 {
     /**
-     * Extract endpoint path from request
+     * Path of the call after the REST front name, store code and query included: "/default/V1/products?page=2"
      *
-     * @param RequestInterface $request
+     * @param HttpRequest $request
      * @return string
      */
-    public function extractEndpoint(RequestInterface $request): string;
+    public function extractEndpoint(HttpRequest $request): string;
 
     /**
-     * Extract HTTP method from request
+     * HTTP method, upper case
      *
-     * @param RequestInterface $request
+     * @param HttpRequest $request
      * @return string
      */
-    public function extractMethod(RequestInterface $request): string;
+    public function extractMethod(HttpRequest $request): string;
 
     /**
-     * Extract headers from request
+     * Request headers by name; a header sent more than once has a list of values
      *
-     * @param RequestInterface $request
-     * @return array<string, string>
+     * @param HttpRequest $request
+     * @return array<string, string|list<string>>
      */
-    public function extractRequestHeaders(RequestInterface $request): array;
+    public function extractRequestHeaders(HttpRequest $request): array;
 
     /**
-     * Extract body content from request
+     * Request body, or null when there is none
      *
-     * @param RequestInterface $request
+     * @param HttpRequest $request
      * @return string|null
      */
-    public function extractRequestBody(RequestInterface $request): ?string;
+    public function extractRequestBody(HttpRequest $request): ?string;
 
     /**
-     * Extract HTTP response code from response
+     * HTTP status of the response
      *
-     * @param ResponseInterface $response
+     * @param RestResponse $response
      * @return int
      */
-    public function extractResponseCode(ResponseInterface $response): int;
+    public function extractResponseCode(RestResponse $response): int;
 
     /**
-     * Extract headers from response
+     * Response headers by name; a header sent more than once has a list of values
      *
-     * @param ResponseInterface $response
-     * @return array<string, string>
+     * @param RestResponse $response
+     * @return array<string, string|list<string>>
      */
-    public function extractResponseHeaders(ResponseInterface $response): array;
+    public function extractResponseHeaders(RestResponse $response): array;
 
     /**
-     * Extract body content from response
+     * Response body; for a call that failed, the error the client receives
      *
-     * @param ResponseInterface $response
+     * @param RestResponse $response
      * @return string|null
      */
-    public function extractResponseBody(ResponseInterface $response): ?string;
+    public function extractResponseBody(RestResponse $response): ?string;
 
     /**
-     * Extract exception body from response
+     * Whether the call ended in an error
      *
-     * @param ResponseInterface $response
-     * @return string|null
-     */
-    public function extractExceptionBody(ResponseInterface $response): ?string;
-
-    /**
-     * Check if response represents an exception
-     *
-     * @param ResponseInterface $response
+     * @param RestResponse $response
      * @return bool
      */
-    public function isException(ResponseInterface $response): bool;
+    public function isException(RestResponse $response): bool;
 }

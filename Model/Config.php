@@ -11,22 +11,24 @@ namespace Hryvinskyi\ApiLogger\Model;
 
 use Hryvinskyi\ApiLogger\Api\ConfigInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
 
 /**
- * Configuration Service
- *
- * Provides access to module configuration settings
+ * REST logging settings read from the store configuration
  */
 class Config implements ConfigInterface
 {
     /**
      * @param ScopeConfigInterface $scopeConfig
+     * @param SerializerInterface $serializer
+     * @param EncryptorInterface $encryptor
      */
     public function __construct(
         private readonly ScopeConfigInterface $scopeConfig,
         private readonly SerializerInterface $serializer,
+        private readonly EncryptorInterface $encryptor
     ) {
     }
 
@@ -35,11 +37,7 @@ class Config implements ConfigInterface
      */
     public function isEnabled(?int $storeId = null): bool
     {
-        return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_ENABLED,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
+        return $this->flag(self::XML_PATH_ENABLED, $storeId);
     }
 
     /**
@@ -47,17 +45,18 @@ class Config implements ConfigInterface
      */
     public function getEnabledEndpoints(?int $storeId = null): array
     {
-        $value = $this->scopeConfig->getValue(
-            self::XML_PATH_ENABLED_ENDPOINTS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
-
-        if (empty($value)) {
+        $value = $this->scopeConfig->getValue(self::XML_PATH_ENABLED_ENDPOINTS, ScopeInterface::SCOPE_STORE, $storeId);
+        if (!is_string($value) || $value === '') {
             return [];
         }
 
-        return array_filter(array_map('trim', $this->serializer->unserialize($value)));
+        try {
+            $endpoints = $this->serializer->unserialize($value);
+        } catch (\InvalidArgumentException) {
+            return [];
+        }
+
+        return is_array($endpoints) ? $this->texts($endpoints) : [];
     }
 
     /**
@@ -71,11 +70,7 @@ class Config implements ConfigInterface
             $storeId
         );
 
-        if (empty($value)) {
-            return [];
-        }
-
-        return array_filter(array_map('trim', explode(',', $value)));
+        return is_string($value) ? $this->texts(explode(',', $value)) : [];
     }
 
     /**
@@ -83,11 +78,7 @@ class Config implements ConfigInterface
      */
     public function shouldLogRequestHeaders(?int $storeId = null): bool
     {
-        return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_LOG_REQUEST_HEADERS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
+        return $this->flag(self::XML_PATH_LOG_REQUEST_HEADERS, $storeId);
     }
 
     /**
@@ -95,11 +86,7 @@ class Config implements ConfigInterface
      */
     public function shouldLogRequestBody(?int $storeId = null): bool
     {
-        return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_LOG_REQUEST_BODY,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
+        return $this->flag(self::XML_PATH_LOG_REQUEST_BODY, $storeId);
     }
 
     /**
@@ -107,11 +94,7 @@ class Config implements ConfigInterface
      */
     public function shouldLogResponseHeaders(?int $storeId = null): bool
     {
-        return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_LOG_RESPONSE_HEADERS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
+        return $this->flag(self::XML_PATH_LOG_RESPONSE_HEADERS, $storeId);
     }
 
     /**
@@ -119,88 +102,64 @@ class Config implements ConfigInterface
      */
     public function shouldLogResponseBody(?int $storeId = null): bool
     {
-        return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_LOG_RESPONSE_BODY,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
+        return $this->flag(self::XML_PATH_LOG_RESPONSE_BODY, $storeId);
     }
 
     /**
      * @inheritDoc
      */
-    public function shouldSanitizeSecrets(?int $storeId = null): bool
+    public function getReplayBaseUrl(): ?string
     {
-        return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_SANITIZE_SECRETS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getSecretFields(?int $storeId = null): array
-    {
-        $value = $this->scopeConfig->getValue(
-            self::XML_PATH_SECRET_FIELDS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
-
-        if (empty($value)) {
-            return $this->getDefaultSecretFields();
+        $value = $this->scopeConfig->getValue(self::XML_PATH_REPLAY_BASE_URL);
+        if (!is_string($value) || trim($value) === '') {
+            return null;
         }
 
-        return array_filter(array_map('trim', explode(',', $value)));
+        return rtrim(trim($value), '/') . '/';
     }
 
     /**
      * @inheritDoc
      */
-    public function getRetentionDays(?int $storeId = null): int
+    public function getReplayToken(): ?string
     {
-        return (int)$this->scopeConfig->getValue(
-            self::XML_PATH_RETENTION_DAYS,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
+        $value = $this->scopeConfig->getValue(self::XML_PATH_REPLAY_TOKEN);
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+
+        $token = trim($this->encryptor->decrypt($value));
+
+        return $token === '' ? null : $token;
     }
 
     /**
-     * @inheritDoc
-     */
-    public function isCleanupEnabled(?int $storeId = null): bool
-    {
-        return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_CLEANUP_ENABLED,
-            ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
-    }
-
-    /**
-     * Get default list of secret field names
+     * A store-scoped yes/no setting
      *
-     * @return array<string>
+     * @param string $path
+     * @param int|null $storeId
+     * @return bool
      */
-    private function getDefaultSecretFields(): array
+    private function flag(string $path, ?int $storeId): bool
     {
-        return [
-            'password',
-            'token',
-            'authorization',
-            'api_key',
-            'apikey',
-            'secret',
-            'access_token',
-            'refresh_token',
-            'private_key',
-            'client_secret',
-            'card_number',
-            'cvv',
-            'ssn',
-        ];
+        return $this->scopeConfig->isSetFlag($path, ScopeInterface::SCOPE_STORE, $storeId);
+    }
+
+    /**
+     * Trimmed, non-empty texts of a list
+     *
+     * @param array<mixed> $values
+     * @return list<string>
+     */
+    private function texts(array $values): array
+    {
+        $texts = [];
+        foreach ($values as $value) {
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                $texts[] = trim((string) $value);
+            }
+        }
+
+        return $texts;
     }
 }

@@ -11,17 +11,19 @@
     <acl>
         <resources>
             <resource id="Magento_Backend::admin">
-                <resource id="Hryvinskyi_ApiLogger::api_logger" title="API Logger" sortOrder="100">
-                    <resource id="Hryvinskyi_ApiLogger::dashboard" title="Dashboard" sortOrder="5"/>
-                    <resource id="Hryvinskyi_ApiLogger::logs" title="View Logs" sortOrder="10"/>
-                    <resource id="Hryvinskyi_ApiLogger::replay" title="Replay Requests" sortOrder="15"/>
-                    <resource id="Hryvinskyi_ApiLogger::delete" title="Delete Logs" sortOrder="20"/>
-                    <resource id="Hryvinskyi_ApiLogger::config" title="Configuration" sortOrder="30"/>
+                <resource id="Magento_Backend::system">
+                    <resource id="Hryvinskyi_ActivityLog::activity_log">
+                        <resource id="Hryvinskyi_ApiLogger::api_logger" title="REST API Logs" translate="title" sortOrder="40">
+                            <resource id="Hryvinskyi_ApiLogger::logs" title="View Logs" translate="title" sortOrder="10"/>
+                            <resource id="Hryvinskyi_ApiLogger::replay" title="Replay Requests" translate="title" sortOrder="15"/>
+                            <resource id="Hryvinskyi_ApiLogger::delete" title="Delete Logs" translate="title" sortOrder="20"/>
+                        </resource>
+                    </resource>
                 </resource>
                 <resource id="Magento_Backend::stores">
                     <resource id="Magento_Backend::stores_settings">
                         <resource id="Magento_Config::config">
-                            <resource id="Hryvinskyi_ApiLogger::config_api_logger" title="API Logger Configuration"/>
+                            <resource id="Hryvinskyi_ApiLogger::config_api_logger" title="REST API Logging Settings" translate="title"/>
                         </resource>
                     </resource>
                 </resource>

@@ -9,130 +9,119 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Plugin\WebApi;
 
-use Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface;
-use Hryvinskyi\ApiLogger\Api\InterceptorInterface;
+use Hryvinskyi\ActivityLog\Api\MillisecondClockInterface;
 use Hryvinskyi\ApiLogger\Api\Rest\ExtractorInterface;
-use Magento\Framework\App\HttpRequestInterface;
+use Hryvinskyi\ApiLogger\Model\Recording\EndpointPolicy;
+use Hryvinskyi\ApiLogger\Model\Recording\RestCallCapture;
+use Hryvinskyi\ApiLogger\Model\Recording\RestCallRecorder;
+use Magento\Framework\App\Request\Http as HttpRequest;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\Webapi\Rest\Response as RestResponse;
 use Magento\Webapi\Controller\Rest;
 use Psr\Log\LoggerInterface;
 
 /**
- * REST API Interceptor Plugin
+ * Captures a REST call when it is dispatched and records it with its response
  *
- * Intercepts REST API requests and responses for logging
+ * The call's state lives in a request-scoped capture, not in this plugin. Every dispatch pushes one item to the
+ * capture and takes back that item, so a dispatch inside another one is recorded with its own response. Logging never
+ * breaks the call: a failure to capture or record is logged and the call's result passes through unchanged.
+ *
+ * @phpstan-import-type CapturedCall from RestCallCapture
  */
 class RestInterceptor
 {
-    private ?LogEntryInterface $currentLogEntry = null;
-    private ?float $startTime = null;
-
     /**
-     * @param InterceptorInterface $interceptor
+     * @param EndpointPolicy $endpointPolicy
      * @param ExtractorInterface $extractor
+     * @param RestCallCapture $capture
+     * @param RestCallRecorder $recorder
+     * @param MillisecondClockInterface $clock
      * @param LoggerInterface $logger
      */
     public function __construct(
-        private readonly InterceptorInterface $interceptor,
+        private readonly EndpointPolicy $endpointPolicy,
         private readonly ExtractorInterface $extractor,
-        private readonly LoggerInterface $logger,
+        private readonly RestCallCapture $capture,
+        private readonly RestCallRecorder $recorder,
+        private readonly MillisecondClockInterface $clock,
+        private readonly LoggerInterface $logger
     ) {
     }
 
     /**
-     * Before dispatch - capture request data
+     * Capture the call when it goes to a logged endpoint
      *
      * @param Rest $subject
      * @param RequestInterface $request
-     * @return array<RequestInterface>
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @return void
      */
-    public function beforeDispatch(Rest $subject, RequestInterface $request): array
+    public function beforeDispatch(Rest $subject, RequestInterface $request): void
+    {
+        $this->capture->push($this->loggedCall($request));
+    }
+
+    /**
+     * Record the captured call with its response
+     *
+     * @param Rest $subject
+     * @param ResponseInterface $result
+     * @return ResponseInterface
+     */
+    public function afterDispatch(Rest $subject, ResponseInterface $result): ResponseInterface
+    {
+        $call = $this->capture->pop();
+        if ($call === null || !$result instanceof RestResponse) {
+            return $result;
+        }
+
+        try {
+            $this->recorder->record($call, [
+                'code' => $this->extractor->extractResponseCode($result),
+                'headers' => $this->extractor->extractResponseHeaders($result),
+                'body' => $this->extractor->extractResponseBody($result),
+                'exception' => $this->extractor->isException($result),
+            ]);
+        } catch (\Throwable $exception) {
+            $this->logger->error('The REST call could not be logged.', ['exception' => $exception]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * The call as captured at dispatch, or null when it is not logged or could not be read
+     *
+     * @param RequestInterface $request
+     * @return CapturedCall|null
+     */
+    private function loggedCall(RequestInterface $request): ?array
     {
         try {
-            if (!$request instanceof HttpRequestInterface) {
-                return [$request];
+            if (!$request instanceof HttpRequest) {
+                return null;
             }
 
             $endpoint = $this->extractor->extractEndpoint($request);
             $method = $this->extractor->extractMethod($request);
-
-            if (!$this->interceptor->shouldLogEndpoint($endpoint, $method)) {
-                return [$request];
+            $pattern = $this->endpointPolicy->matchingPattern($endpoint, $method);
+            if ($pattern === null) {
+                return null;
             }
 
-            $this->startTime = microtime(true);
-
-            // Extract request data using extractor service
-            $headers = $this->extractor->extractRequestHeaders($request);
-            $body = $this->extractor->extractRequestBody($request);
-
-            // Create log entry
-            $this->currentLogEntry = $this->interceptor->createLogEntry(
-                $endpoint,
-                $method,
-                $headers,
-                $body
-            );
+            return [
+                'endpoint' => $endpoint,
+                'method' => $method,
+                'pattern' => $pattern,
+                'headers' => $this->extractor->extractRequestHeaders($request),
+                'body' => $this->extractor->extractRequestBody($request),
+                'startedAtMs' => $this->clock->nowMs(),
+            ];
         } catch (\Throwable $exception) {
-            // Log exception during logging process
-            $this->logger->critical(
-                'API Logger RestInterceptor error: ' . $exception->getMessage(),
-                ['exception' => $exception->getTrace()]
-            );
+            $this->logger->error('The REST call could not be captured.', ['exception' => $exception]);
+
+            return null;
         }
-
-        return [$request];
-    }
-
-    /**
-     * After Dispatch - capture response data
-     *
-     * @param Rest $subject
-     * @param \Magento\Framework\App\ResponseInterface $result
-     * @return \Magento\Framework\App\ResponseInterface
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function afterDispatch(Rest $subject, mixed $result): mixed
-    {
-        try {
-            if ($this->currentLogEntry === null || $this->startTime === null) {
-                return $result;
-            }
-
-            $endTime = microtime(true);
-            $duration = ($endTime - $this->startTime) * 1000; // Convert to milliseconds
-
-            // Extract response data using extractor service
-            $isException = $this->extractor->isException($result);
-            $responseCode = $this->extractor->extractResponseCode($result);
-            $responseHeaders = $this->extractor->extractResponseHeaders($result);
-            $responseBody = $this->extractor->extractResponseBody($result);
-            if ($isException) {
-                $responseBody = $this->extractor->extractExceptionBody($result);
-            }
-
-            // Complete and save log entry
-            $this->interceptor->completeLogEntry(
-                $this->currentLogEntry,
-                $responseCode,
-                $responseHeaders,
-                $responseBody,
-                $duration,
-                $isException
-            );
-
-            // Reset for next request
-            $this->currentLogEntry = null;
-            $this->startTime = null;
-        } catch (\Throwable $exception) {
-            // Log exception during logging process
-            $this->logger->critical(
-                'API Logger RestInterceptor error: ' . $exception->getMessage(),
-                ['exception' => $exception->getTrace()]
-            );
-        }
-
-        return $result;
     }
 }

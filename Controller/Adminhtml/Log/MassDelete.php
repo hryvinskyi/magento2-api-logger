@@ -9,17 +9,19 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Controller\Adminhtml\Log;
 
-use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
+use Hryvinskyi\ApiLogger\Model\CallRemover;
 use Hryvinskyi\ApiLogger\Model\ResourceModel\LogEntry\CollectionFactory;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\Controller\ResultFactory;
+use Magento\Framework\AuthorizationInterface;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Ui\Component\MassAction\Filter;
+use Psr\Log\LoggerInterface;
 
 /**
- * Mass delete log entries controller
+ * Removes the selected logged calls and their activities
  */
 class MassDelete extends Action implements HttpPostActionInterface
 {
@@ -29,52 +31,51 @@ class MassDelete extends Action implements HttpPostActionInterface
      * @param Context $context
      * @param Filter $filter
      * @param CollectionFactory $collectionFactory
-     * @param LogEntryRepositoryInterface $logEntryRepository
+     * @param CallRemover $callRemover
+     * @param LoggerInterface $logger
+     * @param AuthorizationInterface $authorization
      */
     public function __construct(
         Context $context,
         private readonly Filter $filter,
         private readonly CollectionFactory $collectionFactory,
-        private readonly LogEntryRepositoryInterface $logEntryRepository
+        private readonly CallRemover $callRemover,
+        private readonly LoggerInterface $logger,
+        private readonly AuthorizationInterface $authorization
     ) {
         parent::__construct($context);
     }
 
     /**
-     * Execute action
+     * Remove the selected calls and their activities
+     *
+     * An admin who may not delete activities removes nothing.
      *
      * @return ResultInterface
      */
     public function execute(): ResultInterface
     {
-        try {
-            $collection = $this->filter->getCollection($this->collectionFactory->create());
-            $collectionSize = $collection->getSize();
-            $deletedCount = 0;
-
-            foreach ($collection as $logEntry) {
-                try {
-                    $this->logEntryRepository->delete($logEntry);
-                    $deletedCount++;
-                } catch (\Exception $e) {
-                    // Continue deleting other entries
-                }
-            }
-
-            $this->messageManager->addSuccessMessage(
-                __('A total of %1 log(s) have been deleted.', $deletedCount)
+        if (!$this->authorization->isAllowed(CallRemover::ACTIVITY_DELETE_RESOURCE)) {
+            $this->messageManager->addErrorMessage(
+                __('No call was removed: removing calls also removes their activities, which your role may not delete.')
             );
 
-            if ($deletedCount < $collectionSize) {
-                $this->messageManager->addWarningMessage(
-                    __('Failed to delete %1 log(s).', $collectionSize - $deletedCount)
-                );
-            }
-        } catch (\Exception $e) {
-            $this->messageManager->addErrorMessage(__('An error occurred while deleting logs: %1', $e->getMessage()));
+            return $this->resultRedirectFactory->create()->setPath('*/*/index');
         }
 
-        $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
-        return $resultRedirect->setPath('*/*/index');
+        try {
+            $collection = $this->filter->getCollection($this->collectionFactory->create());
+            $removed = $this->callRemover->remove($collection->getItems());
+            $this->messageManager->addSuccessMessage(__('A total of %1 call(s) were removed from the log.', $removed));
+        } catch (LocalizedException $exception) {
+            $this->messageManager->addErrorMessage(__('The calls could not be removed: %1', $exception->getMessage()));
+        } catch (\Exception $exception) {
+            $this->logger->error($exception);
+            $this->messageManager->addErrorMessage(
+                __('The calls could not be removed. The error is in the system log.')
+            );
+        }
+
+        return $this->resultRedirectFactory->create()->setPath('*/*/index');
     }
 }

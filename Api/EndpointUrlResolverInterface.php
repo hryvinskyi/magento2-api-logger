@@ -9,21 +9,23 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Api;
 
+use Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface;
+
 /**
- * Resolves relative API endpoint paths to full absolute URLs
+ * The full URL a logged call was made to
+ *
+ * @api
  */
 interface EndpointUrlResolverInterface
 {
     /**
-     * Resolve a potentially relative endpoint to a full absolute URL
+     * Full URL of the call: the base URL given, else the secure base URL of the call's store, plus REST prefix and path
      *
-     * Uses the Host and X-Forwarded-Proto headers from the original request
-     * to reconstruct the full URL. Falls back to the store base URL.
+     * Nothing stored with the call (its Host or forwarding headers) decides where the URL points.
      *
-     * @param string $endpoint
-     * @param string|null $requestHeadersJson
-     * @param int|null $storeId
+     * @param LogEntryInterface $entry
+     * @param string|null $baseUrl Another store to point the call at, e.g. a staging store
      * @return string
      */
-    public function resolve(string $endpoint, ?string $requestHeadersJson, ?int $storeId): string;
+    public function resolve(LogEntryInterface $entry, ?string $baseUrl = null): string;
 }

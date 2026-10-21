@@ -1,0 +1,221 @@
+/**
+ * Copyright (c) 2025. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+
+.endpoint-selector-container {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    max-width: 800px;
+}
+.endpoint-selector-header {
+    padding: 12px 16px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+.endpoint-selector-footer {
+    padding: 10px 16px;
+    background: #f5f5f5;
+    border-top: 1px solid #ccc;
+    text-align: center;
+}
+.endpoint-selector-search {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 14px;
+    min-width: 70px;
+}
+.endpoint-selector-stats {
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+}
+.endpoint-selector-stats strong {
+    color: #1979c3;
+    font-weight: 600;
+}
+.endpoint-selector-actions {
+    display: flex;
+    gap: 8px;
+}
+.endpoint-selector-btn {
+    padding: 4px 10px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+    color: #666;
+    white-space: nowrap;
+}
+.endpoint-selector-btn:hover {
+    background: #e9e9e9;
+    border-color: #999;
+    color: #333;
+}
+.endpoint-selector-body {
+    max-height: 500px;
+    overflow-y: auto;
+}
+.endpoint-group {
+    border-bottom: 1px solid #e3e3e3;
+}
+.endpoint-group:last-child {
+    border-bottom: none;
+}
+.endpoint-group-header {
+    padding: 10px 16px;
+    background: #fafafa;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+.endpoint-group-header:hover {
+    background: #f0f0f0;
+}
+.endpoint-group-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.endpoint-group-title .group-select-all {
+    margin: 0;
+    cursor: pointer;
+}
+.endpoint-group-toggle {
+    transition: transform 0.2s;
+    color: #666;
+}
+.endpoint-group.collapsed .endpoint-group-toggle {
+    transform: rotate(-90deg);
+}
+.endpoint-group-count {
+    font-size: 12px;
+    color: #666;
+    background: #e3e3e3;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.endpoint-group-content {
+    padding: 8px 16px 8px 36px;
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+.endpoint-group.collapsed .endpoint-group-content {
+    display: none;
+}
+.endpoint-item {
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.endpoint-item.hidden {
+    display: none;
+}
+.endpoint-item input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+.endpoint-item label {
+    margin: 0;
+    cursor: pointer;
+    font-size: 13px;
+    color: #333;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+.endpoint-item label:hover {
+    color: #1979c3;
+}
+.endpoint-methods {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.endpoint-method-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    line-height: 1;
+    letter-spacing: 0.5px;
+}
+.endpoint-method-badge.get {
+    background: #61affe;
+    color: #fff;
+}
+.endpoint-method-badge.post {
+    background: #49cc90;
+    color: #fff;
+}
+.endpoint-method-badge.put {
+    background: #fca130;
+    color: #fff;
+}
+.endpoint-method-badge.patch {
+    background: #50e3c2;
+    color: #000;
+}
+.endpoint-method-badge.delete {
+    background: #f93e3e;
+    color: #fff;
+}
+.endpoint-method-badge.options {
+    background: #0d5aa7;
+    color: #fff;
+}
+.endpoint-method-badge.head {
+    background: #9012fe;
+    color: #fff;
+}
+.endpoint-label-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+    max-width: 300px;
+}
+.endpoint-value {
+    font-size: 10px;
+    color: #999;
+    font-family: monospace;
+    margin-left: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
+}
+.no-results {
+    padding: 20px;
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    display: none;
+}
+.no-results.visible {
+    display: block;
+}
+.endpoint-selector-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}

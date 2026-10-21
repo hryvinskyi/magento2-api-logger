@@ -9,153 +9,89 @@ declare(strict_types=1);
 
 namespace Hryvinskyi\ApiLogger\Controller\Adminhtml\Log;
 
-use Hryvinskyi\ApiLogger\Api\EndpointUrlResolverInterface;
 use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
+use Hryvinskyi\ApiLogger\Model\Body\BodyPager;
+use Hryvinskyi\ApiLogger\Model\Http\RequestParams;
+use Hryvinskyi\ApiLogger\Model\Replay\ReplayService;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\Controller\Result\Json;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\HTTP\Client\CurlFactory;
-use Magento\Framework\Serialize\SerializerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
- * Replay an API request
+ * Sends a logged call again and answers with both outcomes side by side
+ *
+ * Whatever the replayed server answered is made valid UTF-8 before it is encoded, and every failure, encoding
+ * included, is answered as an error the dialog shows rather than as a broken response.
  */
 class Replay extends Action implements HttpPostActionInterface
 {
     public const ADMIN_RESOURCE = 'Hryvinskyi_ApiLogger::replay';
+    private const BODY_PREVIEW_BYTES = 65536;
+    private const ENCODING = 'UTF-8';
 
     /**
      * @param Context $context
+     * @param RequestParams $params
      * @param LogEntryRepositoryInterface $logEntryRepository
-     * @param CurlFactory $curlFactory
-     * @param SerializerInterface $serializer
-     * @param JsonFactory $jsonFactory
-     * @param EndpointUrlResolverInterface $endpointUrlResolver
+     * @param ReplayService $replayService
+     * @param BodyPager $pager
+     * @param LoggerInterface $logger
      */
     public function __construct(
         Context $context,
+        private readonly RequestParams $params,
         private readonly LogEntryRepositoryInterface $logEntryRepository,
-        private readonly CurlFactory $curlFactory,
-        private readonly SerializerInterface $serializer,
-        private readonly JsonFactory $jsonFactory,
-        private readonly EndpointUrlResolverInterface $endpointUrlResolver
+        private readonly ReplayService $replayService,
+        private readonly BodyPager $pager,
+        private readonly LoggerInterface $logger
     ) {
         parent::__construct($context);
     }
 
     /**
-     * @inheritDoc
+     * Replay the call
+     *
+     * @return ResultInterface
      */
     public function execute(): ResultInterface
     {
-        $result = $this->jsonFactory->create();
-        $id = (int)$this->getRequest()->getParam('id');
-
-        if (!$id) {
-            return $result->setData(['error' => true, 'message' => 'Invalid log entry ID.']);
+        $result = $this->resultFactory->create(ResultFactory::TYPE_JSON);
+        if (!$result instanceof Json) {
+            return $result;
         }
 
         try {
-            $logEntry = $this->logEntryRepository->getById($id);
-        } catch (NoSuchEntityException $e) {
-            return $result->setData(['error' => true, 'message' => 'Log entry not found.']);
-        }
-
-        $endpoint = $this->endpointUrlResolver->resolve(
-            $logEntry->getEndpoint(),
-            $logEntry->getRequestHeaders(),
-            $logEntry->getStoreId()
-        );
-        $method = strtoupper($logEntry->getMethod());
-        $requestBody = $logEntry->getRequestBody();
-
-        $curl = $this->curlFactory->create();
-        $curl->setTimeout(30);
-
-        $headers = $this->parseHeaders($logEntry->getRequestHeaders());
-        foreach ($headers as $name => $value) {
-            $lowerName = strtolower($name);
-            if (in_array($lowerName, ['host', 'content-length', 'transfer-encoding'])) {
-                continue;
-            }
-            $curl->addHeader($name, $value);
-        }
-
-        $startTime = microtime(true);
-
-        try {
-            switch ($method) {
-                case 'POST':
-                    $curl->post($endpoint, $requestBody ?? '');
-                    break;
-                case 'PUT':
-                    $curl->addHeader('X-HTTP-Method-Override', 'PUT');
-                    $curl->post($endpoint, $requestBody ?? '');
-                    break;
-                case 'DELETE':
-                    $curl->addHeader('X-HTTP-Method-Override', 'DELETE');
-                    $curl->post($endpoint, $requestBody ?? '');
-                    break;
-                case 'PATCH':
-                    $curl->addHeader('X-HTTP-Method-Override', 'PATCH');
-                    $curl->post($endpoint, $requestBody ?? '');
-                    break;
-                default:
-                    $curl->get($endpoint);
-                    break;
-            }
-
-            $endTime = microtime(true);
-            $replayDuration = ($endTime - $startTime) * 1000;
+            $entry = $this->logEntryRepository->getById($this->params->int('id'));
+            $replay = $this->replayService->replay($entry);
 
             return $result->setData([
-                'error' => false,
-                'original_status' => $logEntry->getResponseCode(),
-                'original_duration' => $logEntry->getDuration(),
-                'replay_status' => $curl->getStatus(),
-                'replay_duration' => round($replayDuration, 2),
-                'replay_body' => $curl->getBody(),
+                'original' => ['status' => $entry->getResponseCode(), 'durationMs' => $entry->getDuration()],
+                'replay' => [
+                    'status' => $replay['status'],
+                    'durationMs' => $replay['durationMs'],
+                    'url' => mb_scrub($replay['url'], self::ENCODING),
+                    'body' => mb_strcut(
+                        mb_scrub($this->pager->readable($replay['body']), self::ENCODING),
+                        0,
+                        self::BODY_PREVIEW_BYTES,
+                        self::ENCODING
+                    ),
+                ],
             ]);
-        } catch (\Exception $e) {
-            $endTime = microtime(true);
-            $replayDuration = ($endTime - $startTime) * 1000;
+        } catch (NoSuchEntityException) {
+            return $result->setData(['error' => (string) __('The call is no longer logged.')]);
+        } catch (LocalizedException $exception) {
+            return $result->setData(['error' => (string) __('The replay failed: %1', $exception->getMessage())]);
+        } catch (\Exception $exception) {
+            $this->logger->error($exception);
 
-            return $result->setData([
-                'error' => true,
-                'message' => 'Request failed: ' . $e->getMessage(),
-                'original_status' => $logEntry->getResponseCode(),
-                'original_duration' => $logEntry->getDuration(),
-                'replay_duration' => round($replayDuration, 2),
-            ]);
+            return $result->setData(['error' => (string) __('The replay failed. The error is in the system log.')]);
         }
-    }
-
-    /**
-     * Parse headers JSON into key-value array
-     *
-     * @param string|null $headersJson
-     * @return array<string, string>
-     */
-    private function parseHeaders(?string $headersJson): array
-    {
-        if (empty($headersJson)) {
-            return [];
-        }
-
-        try {
-            $headers = $this->serializer->unserialize($headersJson);
-        } catch (\Exception $e) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($headers as $name => $value) {
-            $result[(string)$name] = is_array($value) ? implode(', ', $value) : (string)$value;
-        }
-
-        return $result;
     }
 }

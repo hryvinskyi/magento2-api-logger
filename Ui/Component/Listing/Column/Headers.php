@@ -28,8 +28,8 @@ class Headers extends Column
      * @param ContextInterface $context
      * @param UiComponentFactory $uiComponentFactory
      * @param Json $serializer
-     * @param array<string, mixed> $components
-     * @param array<string, mixed> $data
+     * @param array<string,mixed> $components
+     * @param array<string,mixed> $data
      */
     public function __construct(
         ContextInterface $context,
@@ -44,21 +44,28 @@ class Headers extends Column
     /**
      * Convert the headers field of every row into a structured list of {key, value} rows.
      *
-     * @param array<string, mixed> $dataSource
+     * @param array<string,mixed> $dataSource
      * @return array<string, mixed>
      */
     public function prepareDataSource(array $dataSource): array
     {
-        if (!isset($dataSource['data']['items'])) {
+        $data = $dataSource['data'] ?? null;
+        $items = is_array($data) ? ($data['items'] ?? null) : null;
+        if (!is_array($data) || !is_array($items)) {
             return $dataSource;
         }
 
-        $fieldName = (string)$this->getData('name');
-
-        foreach ($dataSource['data']['items'] as &$item) {
-            $raw = $item[$fieldName] ?? null;
-            $item[$fieldName] = $this->toRows(is_string($raw) ? $raw : '');
+        $fieldName = $this->getName();
+        foreach ($items as $index => $item) {
+            if (is_array($item)) {
+                $raw = $item[$fieldName] ?? null;
+                $item[$fieldName] = $this->toRows(is_string($raw) ? $raw : '');
+                $items[$index] = $item;
+            }
         }
+
+        $data['items'] = $items;
+        $dataSource['data'] = $data;
 
         return $dataSource;
     }
@@ -105,7 +112,16 @@ class Headers extends Column
             return null;
         }
 
-        return is_array($decoded) ? $decoded : null;
+        if (!is_array($decoded)) {
+            return null;
+        }
+
+        $headers = [];
+        foreach ($decoded as $key => $value) {
+            $headers[(string) $key] = $value;
+        }
+
+        return $headers;
     }
 
     /**
@@ -124,6 +140,6 @@ class Headers extends Column
             return $value ? 'true' : 'false';
         }
 
-        return (string)$value;
+        return is_scalar($value) ? (string) $value : '';
     }
 }

@@ -10,61 +10,54 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Controller\Adminhtml\Log;
 
 use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
+use Hryvinskyi\ApiLogger\Model\Http\RequestParams;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
-use Magento\Backend\Model\View\Result\Page;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\View\Result\PageFactory;
 
 /**
- * Log detail view controller
+ * A logged call is shown on its activity page; old links and bookmarks land there
  */
 class View extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'Hryvinskyi_ApiLogger::logs';
+    private const ACTIVITY_VIEW = 'activitylog/activity/view';
 
     /**
      * @param Context $context
-     * @param PageFactory $resultPageFactory
+     * @param RequestParams $params
      * @param LogEntryRepositoryInterface $logEntryRepository
      */
     public function __construct(
         Context $context,
-        private readonly PageFactory $resultPageFactory,
+        private readonly RequestParams $params,
         private readonly LogEntryRepositoryInterface $logEntryRepository
     ) {
         parent::__construct($context);
     }
 
     /**
-     * Execute action
+     * Send the admin to the call's activity, or back to the grid
      *
      * @return ResultInterface
      */
     public function execute(): ResultInterface
     {
-        $id = (int)$this->getRequest()->getParam('id');
-
-        if (!$id) {
-            $this->messageManager->addErrorMessage(__('Invalid log entry ID.'));
-            return $this->resultRedirectFactory->create()->setPath('*/*/index');
-        }
-
+        $redirect = $this->resultRedirectFactory->create();
         try {
-            $logEntry = $this->logEntryRepository->getById($id);
-        } catch (NoSuchEntityException $e) {
-            $this->messageManager->addErrorMessage(__('Log entry not found.'));
-            return $this->resultRedirectFactory->create()->setPath('*/*/index');
+            $activityId = $this->logEntryRepository->getById($this->params->int('id'))->getActivityId();
+        } catch (NoSuchEntityException) {
+            $activityId = null;
         }
 
-        $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Hryvinskyi_ApiLogger::logs');
-        $resultPage->getConfig()->getTitle()->prepend(
-            __('Log Entry #%1 - %2 %3', $id, $logEntry->getMethod(), $logEntry->getEndpoint())
-        );
+        if ($activityId === null) {
+            $this->messageManager->addErrorMessage(__('The call is no longer logged.'));
 
-        return $resultPage;
+            return $redirect->setPath('*/*/index');
+        }
+
+        return $redirect->setPath(self::ACTIVITY_VIEW, ['id' => $activityId]);
     }
 }

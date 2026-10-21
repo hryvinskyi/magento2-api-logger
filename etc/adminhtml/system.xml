@@ -10,9 +10,9 @@
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
     <system>
         <section id="api_logger" translate="label" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
-            <label>API Logger</label>
+            <label>REST API Logging</label>
             <tab>hryvinskyi</tab>
-            <resource>Hryvinskyi_ApiLogger::config</resource>
+            <resource>Hryvinskyi_ApiLogger::config_api_logger</resource>
 
             <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>General Settings</label>
@@ -79,40 +79,27 @@
                 </field>
             </group>
 
-            <group id="security" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>Security &amp; Sanitization</label>
-
-                <field id="sanitize_secrets" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Sanitize Sensitive Data</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Automatically hash/mask sensitive fields before logging</comment>
-                </field>
-
-                <field id="secret_fields" translate="label comment" type="textarea" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Secret Field Names</label>
-                    <comment><![CDATA[Comma-separated list of field names to treat as secrets (e.g., password, token, authorization, api_key, secret, card_number, cvv). Case-insensitive pattern matching.]]></comment>
-                    <depends>
-                        <field id="sanitize_secrets">1</field>
-                    </depends>
+            <group id="retention" translate="label comment" sortOrder="20" showInDefault="1">
+                <label>Retention</label>
+                <comment>Secrets are masked before anything is stored, using the secret field names of the Activity Log settings.</comment>
+                <field id="days" translate="label comment" type="text" sortOrder="10" showInDefault="1">
+                    <label>Keep REST Calls (days)</label>
+                    <comment>Calls are removed from the journal and from this log after this many days. 0 keeps them.</comment>
+                    <validate>required-entry validate-digits validate-zero-or-greater</validate>
                 </field>
             </group>
 
-            <group id="cleanup" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>Cleanup &amp; Retention</label>
-
-                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Enable Automatic Cleanup</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Automatically delete old log entries via cron</comment>
+            <group id="replay" translate="label" sortOrder="30" showInDefault="1">
+                <label>Replay</label>
+                <field id="base_url" translate="label comment" type="text" sortOrder="10" showInDefault="1">
+                    <label>Replay Against</label>
+                    <comment><![CDATA[Base URL of the store replayed calls are sent to, e.g. <code>https://staging.example.com/</code>. Empty replays against this store. A replay is sent as the admin who replays it and is logged as a new call.]]></comment>
+                    <validate>validate-url</validate>
                 </field>
-
-                <field id="retention_days" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Retention Period (Days)</label>
-                    <comment>Delete log entries older than this many days (0 = never delete)</comment>
-                    <validate>validate-number validate-zero-or-greater</validate>
-                    <depends>
-                        <field id="enabled">1</field>
-                    </depends>
+                <field id="token" translate="label comment" type="obscure" sortOrder="20" showInDefault="1">
+                    <label>Token for That Store</label>
+                    <comment>Integration or admin token sent with replays to the URL above. Replays against this store use a token issued for the admin who replays.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
             </group>
         </section>

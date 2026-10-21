@@ -7,6 +7,7 @@
 
 namespace Hryvinskyi\ApiLogger\Model;
 
+use Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface;
 use Hryvinskyi\ApiLogger\Api\Data\LogEntrySearchResultsInterface;
 use Magento\Framework\Api\Search\SearchResult;
 
@@ -18,7 +19,9 @@ class LogEntrySearchResults extends SearchResult implements LogEntrySearchResult
     #[\Override]
     public function getItems(): array
     {
-        return parent::getItems() ?? [];
+        return array_values(
+            array_filter(parent::getItems(), static fn ($item): bool => $item instanceof LogEntryInterface)
+        );
     }
 
     /**

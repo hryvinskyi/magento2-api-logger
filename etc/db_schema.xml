@@ -11,7 +11,8 @@
     <table name="hryvinskyi_api_log_entry" resource="default" engine="innodb" comment="API Log Entries">
         <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true"
                 comment="Entity ID"/>
-        <column xsi:type="varchar" name="endpoint" nullable="false" length="512" comment="API Endpoint"/>
+        <column xsi:type="varchar" name="endpoint" nullable="false" length="512" comment="API Endpoint Path"/>
+        <column xsi:type="text" name="query_string" nullable="true" comment="API Endpoint Query"/>
         <column xsi:type="varchar" name="method" nullable="false" length="10" comment="HTTP Method"/>
         <column xsi:type="mediumtext" name="request_headers" nullable="true" comment="Request Headers JSON"/>
         <column xsi:type="mediumtext" name="request_body" nullable="true" comment="Request Body"/>
@@ -26,6 +27,10 @@
         <column xsi:type="varchar" name="user_agent" nullable="true" length="512" comment="User Agent"/>
         <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
                 comment="Created At"/>
+        <column xsi:type="int" name="activity_id" unsigned="true" nullable="true"
+                comment="Activity the call is journaled as"/>
+        <column xsi:type="varchar" name="correlation_id" nullable="true" length="64"
+                comment="Operation the call belongs to"/>
 
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
@@ -49,5 +54,14 @@
         <index referenceId="HRYVINSKYI_API_LOG_ENTRY_STORE_ID" indexType="btree">
             <column name="store_id"/>
         </index>
+        <index referenceId="HRYVINSKYI_API_LOG_ENTRY_CORRELATION_ID" indexType="btree">
+            <column name="correlation_id"/>
+        </index>
+        <constraint xsi:type="unique" referenceId="HRYVINSKYI_API_LOG_ENTRY_ACTIVITY_ID">
+            <column name="activity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="FK_F4B8EACAA9C1DB9DAFAC91D2995FDBF4"
+                    table="hryvinskyi_api_log_entry" column="activity_id"
+                    referenceTable="hryvinskyi_activity_log" referenceColumn="entity_id" onDelete="CASCADE"/>
     </table>
 </schema>
