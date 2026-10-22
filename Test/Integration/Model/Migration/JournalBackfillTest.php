@@ -25,7 +25,6 @@ use Magento\Framework\App\Config\ReinitableConfigInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\Pdo\Mysql;
-use Magento\Framework\ObjectManager\ResetAfterRequestInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\TestFramework\Fixture\Config;
@@ -37,8 +36,8 @@ use PHPUnit\Framework\TestCase;
  * Journals and masks the calls logged before 2.0, against the real log table, journal and sanitizer
  *
  * The backfill reads every unlinked entry of the table, including entries other tests left there; the test's
- * transaction is rolled back so none of them stays journaled or rewritten. The shared sanitizer keeps the secret list
- * it read first, so it is reset around every test: during an upgrade nothing reads the list before the backfill.
+ * transaction is rolled back so none of them stays journaled or rewritten. The shared sanitizer reads the secret list
+ * before the settings move and masks with the merged list after it, as an upgrade that masks anything earlier does.
  *
  * @phpstan-type Row array<string, mixed>
  */
@@ -65,13 +64,11 @@ class JournalBackfillTest extends TestCase
     {
         $this->resourceConnection = self::service(ResourceConnection::class);
         $this->probe = 'backfill-probe-' . bin2hex(random_bytes(4));
-        $this->resetSanitizer();
     }
 
     protected function tearDown(): void
     {
         self::service(ReinitableConfigInterface::class)->reinit();
-        $this->resetSanitizer();
     }
 
     public function testEveryOldEntryIsJournaledAndMaskedWithTheMergedSecretList(): void
@@ -83,7 +80,6 @@ class JournalBackfillTest extends TestCase
             'The activity log list should not cover the 1.x name before the settings are migrated.'
         );
         self::service(SettingsMigration::class)->run();
-        $this->resetSanitizer();
         self::service(ReinitableConfigInterface::class)->setValue(ActivityLogConfig::XML_PATH_ENABLED, '1');
 
         $password = $this->insertEntry('POST', '/rest/V1/' . $this->probe . '/login', [
@@ -384,18 +380,6 @@ class JournalBackfillTest extends TestCase
                 ->from($this->resourceConnection->getTableName(ActivityResource::TABLE), ['COUNT(*)'])
                 ->where('action = ?', $action)
         ));
-    }
-
-    /**
-     * Forget the secret list the shared sanitizer read
-     *
-     * @return void
-     */
-    private function resetSanitizer(): void
-    {
-        $sanitizer = self::service(SanitizerInterface::class);
-        self::assertInstanceOf(ResetAfterRequestInterface::class, $sanitizer);
-        $sanitizer->_resetState();
     }
 
     /**

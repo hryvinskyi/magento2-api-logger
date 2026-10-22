@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Test\Unit\Model\Body;
 
 use Hryvinskyi\ApiLogger\Model\Body\BodyPager;
+use Hryvinskyi\ApiLogger\Model\Body\ReadableBody;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -24,46 +25,14 @@ class BodyPagerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->pager = new BodyPager();
+        $this->pager = new BodyPager(new ReadableBody());
     }
 
-    public function testAJsonObjectIsPrettyPrinted(): void
+    public function testAJsonBodyIsPagedByTheLinesItReadsAs(): void
     {
-        self::assertSame(
-            "{\n    \"sku\": \"a/b\",\n    \"tags\": [\n        1,\n        2\n    ]\n}",
-            $this->pager->readable('{"sku":"a\/b","tags":[1,2]}')
-        );
-    }
+        $result = $this->pager->page('{"sku":"a","qty":2}', 1);
 
-    public function testAJsonArrayIsPrettyPrinted(): void
-    {
-        self::assertSame("[\n    1,\n    2\n]", $this->pager->readable('[1,2]'));
-    }
-
-    public function testUnicodeAndZeroFractionsSurvivePrettyPrinting(): void
-    {
-        self::assertSame(
-            "{\n    \"name\": \"Zażółć\",\n    \"qty\": 1.0\n}",
-            $this->pager->readable('{"name":"Zażółć","qty":1.0}')
-        );
-    }
-
-    public function testTextThatIsNotJsonStaysAsItIs(): void
-    {
-        self::assertSame("plain text\nsecond line", $this->pager->readable("plain text\nsecond line"));
-    }
-
-    public function testAJsonScalarStaysAsItIs(): void
-    {
-        self::assertSame('42', $this->pager->readable('42'));
-        self::assertSame('"42"', $this->pager->readable('"42"'));
-        self::assertSame('true', $this->pager->readable('true'));
-    }
-
-    public function testNothingIsReadableFromANullOrEmptyBody(): void
-    {
-        self::assertSame('', $this->pager->readable(null));
-        self::assertSame('', $this->pager->readable(''));
+        self::assertSame(['{', '    "sku": "a",', '    "qty": 2', '}'], array_column($result['lines'], 'text'));
     }
 
     public function testALongBodyIsSplitIntoPagesOfFiveHundredNumberedLines(): void
@@ -89,7 +58,7 @@ class BodyPagerTest extends TestCase
 
     public function testPageSizeIsAConstructorArgument(): void
     {
-        $result = (new BodyPager(pageSize: 2))->page("a\nb\nc\nd\ne", 3);
+        $result = (new BodyPager(new ReadableBody(), pageSize: 2))->page("a\nb\nc\nd\ne", 3);
 
         self::assertSame(3, $result['pages']);
         self::assertSame([['n' => 5, 'text' => 'e']], $result['lines']);
@@ -184,7 +153,7 @@ class BodyPagerTest extends TestCase
 
     public function testHitsStopAtTheConfiguredCap(): void
     {
-        $result = (new BodyPager(maxHits: 3))->page("x\nx\nx\nx\nx", 1, 'x');
+        $result = (new BodyPager(new ReadableBody(), maxHits: 3))->page("x\nx\nx\nx\nx", 1, 'x');
 
         self::assertSame([1, 2, 3], $result['hits']);
     }

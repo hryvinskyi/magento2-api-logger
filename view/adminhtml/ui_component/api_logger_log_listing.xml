@@ -41,8 +41,17 @@
         <bookmark name="bookmarks"/>
         <columnsControls name="columns_controls"/>
         <filters name="listing_filters"/>
-        <massaction name="listing_massaction" component="Magento_Ui/js/grid/tree-massactions">
+        <massaction name="listing_massaction" component="Magento_Ui/js/grid/tree-massactions"
+                    class="Hryvinskyi\ActivityLog\Ui\Component\AclMassAction">
             <action name="delete">
+                <argument name="data" xsi:type="array">
+                    <item name="config" xsi:type="array">
+                        <item name="aclResources" xsi:type="array">
+                            <item name="calls" xsi:type="string">Hryvinskyi_ApiLogger::delete</item>
+                            <item name="activities" xsi:type="string">Hryvinskyi_ActivityLog::delete</item>
+                        </item>
+                    </item>
+                </argument>
                 <settings>
                     <confirm>
                         <message translate="true">Are you sure you want to delete selected items?</message>

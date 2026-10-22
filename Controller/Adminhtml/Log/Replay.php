@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Controller\Adminhtml\Log;
 
 use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
-use Hryvinskyi\ApiLogger\Model\Body\BodyPager;
+use Hryvinskyi\ApiLogger\Model\Body\ReadableBody;
 use Hryvinskyi\ApiLogger\Model\Http\RequestParams;
 use Hryvinskyi\ApiLogger\Model\Replay\ReplayService;
 use Magento\Backend\App\Action;
@@ -40,7 +40,7 @@ class Replay extends Action implements HttpPostActionInterface
      * @param RequestParams $params
      * @param LogEntryRepositoryInterface $logEntryRepository
      * @param ReplayService $replayService
-     * @param BodyPager $pager
+     * @param ReadableBody $readableBody
      * @param LoggerInterface $logger
      */
     public function __construct(
@@ -48,7 +48,7 @@ class Replay extends Action implements HttpPostActionInterface
         private readonly RequestParams $params,
         private readonly LogEntryRepositoryInterface $logEntryRepository,
         private readonly ReplayService $replayService,
-        private readonly BodyPager $pager,
+        private readonly ReadableBody $readableBody,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct($context);
@@ -77,7 +77,7 @@ class Replay extends Action implements HttpPostActionInterface
                     'durationMs' => $replay['durationMs'],
                     'url' => mb_scrub($replay['url'], self::ENCODING),
                     'body' => mb_strcut(
-                        mb_scrub($this->pager->readable($replay['body']), self::ENCODING),
+                        mb_scrub($this->readableBody->text($replay['body']), self::ENCODING),
                         0,
                         self::BODY_PREVIEW_BYTES,
                         self::ENCODING

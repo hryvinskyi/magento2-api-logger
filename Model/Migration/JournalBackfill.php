@@ -38,7 +38,9 @@ use Magento\Store\Model\StoreManagerInterface;
  * activity for it: it records none while it is switched off or when the insert fails. The activity's action is built
  * from the masked endpoint. An entry it does record, in the "rest" channel and attributed to an unknown caller at the
  * time the call was logged, is linked to that activity. Masking a masked value gives the same text, so a run can be
- * repeated: it journals what is still unlinked and leaves the rest as it is. Entries go in batches.
+ * repeated: it journals what is still unlinked and leaves the rest as it is. Entries go in batches. Each entry's
+ * activity and the rewrite that links the entry to it are written in one transaction, so a run stopped between them
+ * leaves the entry unlinked and without that activity, and the next run journals it once.
  *
  * @phpstan-type EntryRow array<string, mixed>
  * @phpstan-type StoredEndpoint array{path: string, query: string|null}
@@ -143,6 +145,27 @@ class JournalBackfill
      * @return bool Whether it was journaled
      */
     private function journal(array $row): bool
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $connection->beginTransaction();
+        try {
+            $journaled = $this->journalInTransaction($row);
+            $connection->commit();
+        } catch (\Throwable $exception) {
+            $connection->rollBack();
+            throw $exception;
+        }
+
+        return $journaled;
+    }
+
+    /**
+     * Record an entry's activity and rewrite the entry, inside the caller's transaction
+     *
+     * @param EntryRow $row
+     * @return bool Whether it was journaled
+     */
+    private function journalInTransaction(array $row): bool
     {
         $correlationId = bin2hex(random_bytes(8));
         $endpoint = $this->maskedEndpoint($row);

@@ -12,7 +12,7 @@ namespace Hryvinskyi\ApiLogger\Model\Compare;
 use Hryvinskyi\ActivityLog\Api\ActivityRepositoryInterface;
 use Hryvinskyi\ApiLogger\Api\Data\LogEntryInterface;
 use Hryvinskyi\ApiLogger\Api\DateFormatterInterface;
-use Hryvinskyi\ApiLogger\Model\Body\BodyPager;
+use Hryvinskyi\ApiLogger\Model\Body\ReadableBody;
 use Hryvinskyi\ApiLogger\Model\ResourceModel\SameEndpointCalls;
 use Magento\Framework\Exception\NoSuchEntityException;
 
@@ -31,13 +31,13 @@ class ComparisonView
      * @param SameEndpointCalls $sameEndpointCalls
      * @param ActivityRepositoryInterface $activityRepository
      * @param DateFormatterInterface $dateFormatter
-     * @param BodyPager $pager
+     * @param ReadableBody $readableBody
      */
     public function __construct(
         private readonly SameEndpointCalls $sameEndpointCalls,
         private readonly ActivityRepositoryInterface $activityRepository,
         private readonly DateFormatterInterface $dateFormatter,
-        private readonly BodyPager $pager
+        private readonly ReadableBody $readableBody
     ) {
     }
 
@@ -104,8 +104,8 @@ class ComparisonView
      */
     private function side(LogEntryInterface $entry): array
     {
-        $request = $this->pager->readable($entry->getRequestBody());
-        $response = $this->pager->readable($entry->getResponseBody());
+        $request = $this->readableBody->text($entry->getRequestBody());
+        $response = $this->readableBody->text($entry->getResponseBody());
 
         return [
             'id' => (int) $entry->getEntityId(),

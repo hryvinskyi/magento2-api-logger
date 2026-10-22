@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Hryvinskyi\ApiLogger\Controller\Adminhtml\Log;
 
 use Hryvinskyi\ApiLogger\Api\LogEntryRepositoryInterface;
-use Hryvinskyi\ApiLogger\Model\Body\BodyPager;
+use Hryvinskyi\ApiLogger\Model\Body\ReadableBody;
 use Hryvinskyi\ApiLogger\Model\Body\BodyPart;
 use Hryvinskyi\ApiLogger\Model\Export\AttachmentResult;
 use Hryvinskyi\ApiLogger\Model\Http\RequestParams;
@@ -31,14 +31,14 @@ class Download extends Action implements HttpGetActionInterface
      * @param Context $context
      * @param RequestParams $params
      * @param LogEntryRepositoryInterface $logEntryRepository
-     * @param BodyPager $pager
+     * @param ReadableBody $readableBody
      * @param AttachmentResult $attachmentResult
      */
     public function __construct(
         Context $context,
         private readonly RequestParams $params,
         private readonly LogEntryRepositoryInterface $logEntryRepository,
-        private readonly BodyPager $pager,
+        private readonly ReadableBody $readableBody,
         private readonly AttachmentResult $attachmentResult
     ) {
         parent::__construct($context);
@@ -61,7 +61,7 @@ class Download extends Action implements HttpGetActionInterface
             return $this->resultRedirectFactory->create()->setPath('*/*/index');
         }
 
-        $readable = $this->pager->readable($body);
+        $readable = $this->readableBody->text($body);
         $extension = $readable !== (string) $body || json_decode((string) $body) !== null ? 'json' : 'txt';
 
         return $this->attachmentResult->create(

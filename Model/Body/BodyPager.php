@@ -12,8 +12,8 @@ namespace Hryvinskyi\ApiLogger\Model\Body;
 /**
  * Splits a stored body into numbered lines served a page at a time
  *
- * A JSON body is pretty-printed first so it reads line by line. A search covers the whole body, not only the page:
- * it answers with the numbers of every matching line, up to a limit.
+ * A body is first made readable (ReadableBody), so a JSON body reads line by line. A search covers the whole body,
+ * not only the page: it answers with the numbers of every matching line, up to a limit.
  *
  * @phpstan-type BodyPage array{
  *     lines: list<array{n: int, text: string}>,
@@ -26,14 +26,13 @@ namespace Hryvinskyi\ApiLogger\Model\Body;
  */
 class BodyPager
 {
-    private const JSON_FLAGS = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-        | JSON_PRESERVE_ZERO_FRACTION;
-
     /**
+     * @param ReadableBody $readableBody
      * @param int $pageSize Lines per page
      * @param int $maxHits Matching lines reported at most
      */
     public function __construct(
+        private readonly ReadableBody $readableBody,
         private readonly int $pageSize = 500,
         private readonly int $maxHits = 1000
     ) {
@@ -70,28 +69,6 @@ class BodyPager
     }
 
     /**
-     * The body as readable text: JSON pretty-printed, anything else as it was stored
-     *
-     * @param string|null $body
-     * @return string
-     */
-    public function readable(?string $body): string
-    {
-        if ($body === null || $body === '') {
-            return '';
-        }
-
-        $decoded = json_decode($body);
-        if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded) && !is_object($decoded)) {
-            return $body;
-        }
-
-        $pretty = json_encode($decoded, self::JSON_FLAGS);
-
-        return $pretty === false ? $body : $pretty;
-    }
-
-    /**
      * Split a body into its readable lines
      *
      * @param string|null $body
@@ -99,7 +76,7 @@ class BodyPager
      */
     private function lines(?string $body): array
     {
-        $text = $this->readable($body);
+        $text = $this->readableBody->text($body);
 
         return $text === '' ? [] : explode("\n", str_replace(["\r\n", "\r"], "\n", $text));
     }
