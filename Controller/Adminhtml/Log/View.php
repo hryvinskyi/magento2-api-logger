@@ -23,7 +23,11 @@ use Magento\Framework\Exception\NoSuchEntityException;
 class View extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'Hryvinskyi_ApiLogger::logs';
-    private const ACTIVITY_VIEW = 'activitylog/activity/view';
+
+    /**
+     * Admin paths start with the route id, not the URL front name: the secret key in a URL is made from the route id
+     */
+    private const ACTIVITY_VIEW = 'hryvinskyi_activitylog/activity/view';
 
     /**
      * @param Context $context

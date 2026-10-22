@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-10-22
+
+### Fixed
+- With **Add Secret Key to URLs** on, the REST log's View action and the old dashboard and call links
+  land on the Activity Log pages instead of the admin start page. The links were built from the
+  Activity Log's URL front name, whose secret key the admin router does not accept.
+
+### Changed
+- Admin icons from Lucide, rendered inline through the Activity Log's icon renderer.
+
 ## [2.0.0] - 2026-10-21
 
 ### Breaking
@@ -112,7 +122,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compare picks another call to the same endpoint, by status or correlation id, and shows both
   bodies as a line diff. Each body is compared up to 256 KB.
 - **REST response codes** widget on the Activity Log dashboard.
-- Admin icons from Lucide, rendered inline through the Activity Log's icon renderer.
 - On upgrade, the calls 1.x stored are added to the journal as activities of the `rest` channel
   with the actor "unknown (logged before 2.0)".
 

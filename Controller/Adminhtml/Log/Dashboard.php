@@ -21,7 +21,11 @@ use Magento\Framework\Controller\ResultInterface;
 class Dashboard extends Action implements HttpGetActionInterface
 {
     public const ADMIN_RESOURCE = 'Hryvinskyi_ApiLogger::logs';
-    private const ACTIVITY_DASHBOARD = 'activitylog/dashboard/index';
+
+    /**
+     * Admin paths start with the route id, not the URL front name: the secret key in a URL is made from the route id
+     */
+    private const ACTIVITY_DASHBOARD = 'hryvinskyi_activitylog/dashboard/index';
 
     /**
      * Send the admin to the activity log dashboard

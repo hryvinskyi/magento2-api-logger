@@ -26,7 +26,7 @@ class ActionsTest extends TestCase
     {
         $actions = $this->actionsOf($this->column([]), ['entity_id' => '7', 'activity_id' => '42']);
 
-        self::assertSame('activitylog/activity/view|42', $actions['view']['href'] ?? null);
+        self::assertSame('hryvinskyi_activitylog/activity/view|42', $actions['view']['href'] ?? null);
         self::assertSame('api_logger/log/delete|7', $actions['delete']['href'] ?? null);
         self::assertTrue($actions['delete']['post'] ?? false);
     }

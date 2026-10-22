@@ -21,7 +21,10 @@ use Magento\Ui\Component\Listing\Columns\Column;
  */
 class Actions extends Column
 {
-    private const ACTIVITY_VIEW = 'activitylog/activity/view';
+    /**
+     * Admin paths start with the route id, not the URL front name: the secret key in a URL is made from the route id
+     */
+    private const ACTIVITY_VIEW = 'hryvinskyi_activitylog/activity/view';
     private const ENTRY_VIEW = 'api_logger/log/view';
     private const DELETE = 'api_logger/log/delete';
     private const DELETE_RESOURCE = 'Hryvinskyi_ApiLogger::delete';
