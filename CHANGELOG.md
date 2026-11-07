@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-11-07
+
+### Added
+- `i18n/en_US.csv`: the module's phrases, so a translation pack can be built from it.
+
+### Changed
+- The Activity Log menu entries of this module moved into the menu's groups: **REST API** (was "REST API Logs") is
+  under Logs, **REST API logging** (was "REST Logging Settings") under Settings. Their item names are unchanged.
+- Requires `hryvinskyi/magento2-activity-log` ^1.3, which declares the menu's groups, and
+  `hryvinskyi/magento2-base` ^2.3.
+
 ## [2.0.3] - 2026-10-23
 
 ### Fixed

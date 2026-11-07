@@ -14,14 +14,16 @@
             <arguments>
                 <argument name="items" xsi:type="array">
                     <item name="rest_logs" xsi:type="array">
-                        <item name="label" xsi:type="string" translate="true">REST API Logs</item>
+                        <item name="label" xsi:type="string" translate="true">REST API</item>
+                        <item name="group" xsi:type="string">logs</item>
                         <item name="route" xsi:type="string">api_logger/log/index</item>
                         <item name="resource" xsi:type="string">Hryvinskyi_ApiLogger::logs</item>
                         <item name="sort_order" xsi:type="number">20</item>
                         <item name="icon" xsi:type="string"><![CDATA[<svg aria-hidden="true" focusable="false" class="menu-item-icon lucide lucide-code-xml" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>]]></item>
                     </item>
                     <item name="rest_settings" xsi:type="array">
-                        <item name="label" xsi:type="string" translate="true">REST Logging Settings</item>
+                        <item name="label" xsi:type="string" translate="true">REST API logging</item>
+                        <item name="group" xsi:type="string">settings</item>
                         <item name="route" xsi:type="string">adminhtml/system_config/edit</item>
                         <item name="route_params" xsi:type="array">
                             <item name="section" xsi:type="string">api_logger</item>

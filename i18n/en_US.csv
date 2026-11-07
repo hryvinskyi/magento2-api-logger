@@ -1,0 +1,138 @@
+"The call is no longer logged.","The call is no longer logged."
+"The call was not removed: removing it also removes its activity, which your role may not delete.","The call was not removed: removing it also removes its activity, which your role may not delete."
+"The call was removed from the log.","The call was removed from the log."
+"This export format is not available.","This export format is not available."
+"REST API Logs","REST API Logs"
+"No call was removed: removing calls also removes their activities, which your role may not delete.","No call was removed: removing calls also removes their activities, which your role may not delete."
+"A total of %1 call(s) were removed from the log.","A total of %1 call(s) were removed from the log."
+"The calls could not be removed: %1","The calls could not be removed: %1"
+"The calls could not be removed. The error is in the system log.","The calls could not be removed. The error is in the system log."
+"The replay failed: %1","The replay failed: %1"
+"The replay failed. The error is in the system log.","The replay failed. The error is in the system log."
+"%1 via %2","%1 via %2"
+GET,GET
+POST,POST
+PUT,PUT
+DELETE,DELETE
+PATCH,PATCH
+HEAD,HEAD
+OPTIONS,OPTIONS
+"REST response codes","REST response codes"
+"Calls by class of status","Calls by class of status"
+Calls,Calls
+"cURL command","cURL command"
+"HAR (.har)","HAR (.har)"
+"Raw HTTP (.txt)","Raw HTTP (.txt)"
+"The log entry could not be saved.","The log entry could not be saved."
+"The log entry could not be deleted.","The log entry could not be deleted."
+"Log entry with %1 ""%2"" does not exist.","Log entry with %1 ""%2"" does not exist."
+"%1 could not be reached.","%1 could not be reached."
+"This call cannot be replayed: its URL carries a secret that was masked when it was logged.","This call cannot be replayed: its URL carries a secret that was masked when it was logged."
+View,View
+Delete,Delete
+"Remove this call?","Remove this call?"
+"The call and its activity are removed from the log for good.","The call and its activity are removed from the log for good."
+"%1 hits","%1 hits"
+"1 hit","1 hit"
+"No hits","No hits"
+"Showing lines 1–%1 of %2. Search covers the whole body.","Showing lines 1–%1 of %2. Search covers the whole body."
+Copied,Copied
+"The body could not be loaded.","The body could not be loaded."
+Replay,Replay
+Cancel,Cancel
+Close,Close
+Sending…,Sending…
+Original,Original
+"The replay failed.","The replay failed."
+Compare,Compare
+Back,Back
+"No other call to this endpoint is logged.","No other call to this endpoint is logged."
+"Pick a call to compare with.","Pick a call to compare with."
+"This call","This call"
+"Call #%1","Call #%1"
+Status,Status
+Duration,Duration
+"Response body","Response body"
+"Request body","Request body"
+Identical,Identical
+"Identical in the first %1 KB","Identical in the first %1 KB"
+Loading…,Loading…
+"REST request","REST request"
+"The stored request and response of this call were removed.","The stored request and response of this call were removed."
+"stored request and response","stored request and response"
+Export,Export
+Request,Request
+Response,Response
+"body %1","body %1"
+Headers,Headers
+"No headers were stored.","No headers were stored."
+masked,masked
+Body,Body
+"Search in body","Search in body"
+Copy,Copy
+"No body was stored.","No body was stored."
+"Load next 500 lines","Load next 500 lines"
+"Download body","Download body"
+"Replay this request?","Replay this request?"
+"This is a write request. Replaying it sends the stored body again and may create or modify data.","This is a write request. Replaying it sends the stored body again and may create or modify data."
+"It is sent to this store as you, not as the original caller, and logged as a new call.","It is sent to this store as you, not as the original caller, and logged as a new call."
+"It is sent to the staging store with the token set for replays there.","It is sent to the staging store with the token set for replays there."
+"Compare with another request","Compare with another request"
+"Pick a request to diff against this one. Only requests to the same endpoint are listed.","Pick a request to diff against this one. Only requests to the same endpoint are listed."
+"Search by status or correlation ID","Search by status or correlation ID"
+Pick,Pick
+Time,Time
+Actor,Actor
+"Correlation ID","Correlation ID"
+"Search endpoints","Search endpoints"
+"Select All","Select All"
+"Deselect All","Deselect All"
+"Expand All","Expand All"
+"Collapse All","Collapse All"
+"Select or deselect every endpoint of %1","Select or deselect every endpoint of %1"
+"No endpoint matches the search.","No endpoint matches the search."
+Selected,Selected
+"Show less","Show less"
+"Show all %1 headers","Show all %1 headers"
+"View Logs","View Logs"
+"Replay Requests","Replay Requests"
+"Delete Logs","Delete Logs"
+"REST API Logging Settings","REST API Logging Settings"
+"REST API Logging","REST API Logging"
+"General Settings","General Settings"
+"Enable API Logging","Enable API Logging"
+"Master switch to enable/disable all API logging","Master switch to enable/disable all API logging"
+"Enabled Endpoints","Enabled Endpoints"
+"Select which API endpoints to log. <strong>By default, all endpoints are disabled.</strong> Use the advanced selector below to choose specific endpoints.","Select which API endpoints to log. <strong>By default, all endpoints are disabled.</strong> Use the advanced selector below to choose specific endpoints."
+"Enabled Response Codes","Enabled Response Codes"
+"Select which HTTP response codes to log. Leave empty to log all response codes.","Select which HTTP response codes to log. Leave empty to log all response codes."
+"Log Request Headers","Log Request Headers"
+"Include HTTP request headers in logs","Include HTTP request headers in logs"
+"Log Request Body","Log Request Body"
+"Include request payload in logs","Include request payload in logs"
+"Log Response Headers","Log Response Headers"
+"Include HTTP response headers in logs","Include HTTP response headers in logs"
+"Log Response Body","Log Response Body"
+"Include response payload in logs","Include response payload in logs"
+Retention,Retention
+"Secrets are masked before anything is stored, using the secret field names of the Activity Log settings.","Secrets are masked before anything is stored, using the secret field names of the Activity Log settings."
+"Keep REST Calls (days)","Keep REST Calls (days)"
+"Calls are removed from the journal and from this log after this many days. 0 keeps them.","Calls are removed from the journal and from this log after this many days. 0 keeps them."
+"Replay Against","Replay Against"
+"Base URL of the store replayed calls are sent to, e.g. <code>https://staging.example.com/</code>. Empty replays against this store. A replay is sent as the admin who replays it and is logged as a new call.","Base URL of the store replayed calls are sent to, e.g. <code>https://staging.example.com/</code>. Empty replays against this store. A replay is sent as the admin who replays it and is logged as a new call."
+"Token for That Store","Token for That Store"
+"Integration or admin token sent with replays to the URL above. Replays against this store use a token issued for the admin who replays.","Integration or admin token sent with replays to the URL above. Replays against this store use a token issued for the admin who replays."
+"REST API","REST API"
+"REST API logging","REST API logging"
+"Are you sure you want to delete selected items?","Are you sure you want to delete selected items?"
+"Delete items","Delete items"
+ID,ID
+Endpoint,Endpoint
+Method,Method
+"Response Code","Response Code"
+"Duration (ms)","Duration (ms)"
+Exception,Exception
+"IP Address","IP Address"
+"Request Headers","Request Headers"
+"Response Headers","Response Headers"
+"Created At","Created At"

@@ -23,8 +23,8 @@ Logs the calls made to your store's REST API. Each call is journaled in the Acti
 
 - PHP 8.1 or higher
 - Magento 2.4.x (Open Source or Adobe Commerce)
-- `hryvinskyi/magento2-activity-log` `^1.0`
-- `hryvinskyi/magento2-base` `^2.2`
+- `hryvinskyi/magento2-activity-log` `^1.3`
+- `hryvinskyi/magento2-base` `^2.3`
 
 ## Installation
 
@@ -53,7 +53,7 @@ bin/magento cache:flush
 | List of logged calls | **Activity Log > REST API Logs** |
 | One call | **View** on a row of the list, or the call's page in **Activity Log > All Activity** |
 | Response codes widget | **Activity Log > Dashboard** |
-| Settings | **Stores > Configuration > Hryvinskyi Extensions > REST API Logging**. The Activity Log pages link to it as **REST Logging Settings** |
+| Settings | **Stores > Configuration > Hryvinskyi Extensions > REST API Logging**. The Activity Log menu links to it as **REST API logging**, under Settings |
 | Secret field names | **Stores > Configuration > Hryvinskyi Extensions > Activity Log > Secrets** |
 
 ## Configuration
